@@ -1,0 +1,508 @@
+import streamlit as st
+import pandas as pd
+import time
+import numpy as np
+import altair as alt
+from streamlit_lottie import st_lottie
+import requests
+import json
+from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
+import streamlit.components.v1 as components
+import pygwalker as pyg
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+from st_aggrid.shared import JsCode
+import plotly.express as px
+import base64
+from io import BytesIO
+
+
+
+st.set_page_config(page_title="SRR Management View", page_icon=":mag_right:", layout="wide")
+
+
+@st.cache_data(ttl=120, show_spinner=True)
+def load_data(url):
+    df = pd.read_csv(url)
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
+    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
+    return df
+
+def calculate_metrics(df):
+    unique_case_count = df['Service'].count()
+    survey_avg = df['Survey'].mean()
+    survey_count = df['Survey'].count()
+    return unique_case_count, survey_avg, survey_count
+
+def convert_to_seconds(time_str):
+    if pd.isnull(time_str):
+        return 0
+    try:
+        h, m, s = map(int, time_str.split(':'))
+        return h * 3600 + m * 60 + s
+    except ValueError:
+        return 0
+
+def seconds_to_hms(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+
+def convert_df_to_csv(df):
+    return df.to_csv(index=False).encode('utf-8')
+
+url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
+df = load_data(url).copy()
+
+# Function to load a lottie animation from a URL
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
+
+lottie_people = load_lottieurl("https://lottie.host/2ad92c27-a3c0-47cc-8882-9eb531ee1e0c/A9tbMxONxp.json")
+lottie_clap = load_lottieurl("https://lottie.host/af0a6ccc-a8ac-4921-8564-5769d8e09d1e/4Czx1gna6U.json")
+lottie_queuing = load_lottieurl("https://lottie.host/910429d2-a0a4-4668-a4d4-ee831f9ccecd/yOKbdL2Yze.json")
+lottie_inprogress = load_lottieurl("https://lottie.host/c5c6caea-922b-4b4e-b34a-41ecaafe2a13/mphMkSfOkR.json")
+lottie_chill = load_lottieurl("https://lottie.host/2acdde4d-32d7-44a8-aa64-03e1aa191466/8EG5a8ToOQ.json")
+
+# Button to refresh the data - align to upper right
+col1, col2 = st.columns([3, .350])
+with col2:
+    if st.button('Refresh Data'):
+        # st.experimental_memo.clear()
+        st.cache_data.clear()
+        # st.experimental_rerun()
+        st.rerun()
+
+# Center align 'five9 srr agent view'
+st.markdown(
+    f"<h1 style='text-align: center;'>Five9 SRR Management View</h1>",
+    unsafe_allow_html=True
+)
+
+# Display Lottie animation
+st_lottie(lottie_people, speed=1, reverse=False, loop=True, quality="low", height=200, width=200, key=None)
+
+st.write(':wave: Welcome:exclamation:')
+# st.title('Five9 SRR Management View')
+
+
+# Insert Five9 logo
+five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
+
+
+# st.sidebar.image(five9logo_url, width=200)
+
+# # Sidebar Title
+# st.sidebar.markdown('# Select a **Filter:**')
+
+
+# with st.sidebar:
+#     all_services_options = ['All'] + list(df['Service'].unique())
+#     selected_service = st.multiselect('Service - (Multi-Select)', all_services_options, default='All')
+
+# # Apply filtering
+# if 'All' in selected_service:
+#     df_filtered = df
+
+# elif not selected_service:
+#     # If nothing is selected, display a message indicating all services are being displayed
+#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All Services</h1>", unsafe_allow_html=True)
+#     df_filtered = df
+# else:
+#     df_filtered = df[df['Service'].isin(selected_service)]
+    
+
+# # Create a date_input widget for 'Date Created' column filtering.
+# start_date = st.sidebar.date_input('Start Date', value=df_filtered['Date Created'].min(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
+# end_date = st.sidebar.date_input('End Date', value=df_filtered['Date Created'].max(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
+
+# # Convert start_date and end_date to datetime objects
+# start_date = pd.to_datetime(start_date)
+# end_date = pd.to_datetime(end_date)
+
+# # Apply filtering
+# df_filtered = df_filtered[(df_filtered['Date Created'] >= start_date) & (df_filtered['Date Created'] <= end_date)]
+
+# # Sidebar with a dropdown for 'Weekend?' column filtering
+# with st.sidebar:
+#     selected_weekend = st.selectbox('Weekend?', ['All', 'Yes', 'No'])
+
+# # Apply filtering
+# if selected_weekend != 'All':
+#     df_filtered = df_filtered[df_filtered['Weekend?'] == selected_weekend]
+# else:
+#     df_filtered = df_filtered
+
+# # Sidebar with a dropdown for 'Working Hours?' column filtering
+# with st.sidebar:
+#     selected_working_hours = st.selectbox('Working Hours?', ['All', 'Yes', 'No'])
+
+# # Apply filtering
+# if selected_working_hours != 'All':
+#     df_filtered = df_filtered[df_filtered['Working Hours?'] == selected_working_hours]
+# else:
+#     df_filtered = df_filtered
+
+# # Sidebar with a multi-select dropdown for 'SME (On It)' column filtering
+# with st.sidebar:
+#     all_sme_options = ['All'] + list(df_filtered['SME (On It)'].unique())
+#     selected_sme_on_it = st.multiselect('SME (On It) - (Multi-Select)', all_sme_options, default='All')
+
+
+# # Check the selection conditions
+# if 'All' in selected_sme_on_it:
+#     # If 'All' is selected, display the whole filtered dataframe without a message
+#     st.sidebar.markdown("---")
+# elif not selected_sme_on_it:
+#     # If nothing is selected, display a message indicating all SMEs are being displayed
+#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All SMEs</h1>", unsafe_allow_html=True)
+    
+# else:
+#     # If specific SMEs are selected, filter the dataframe and display the result
+#     df_filtered = df_filtered[df_filtered['SME (On It)'].isin(selected_sme_on_it)]
+#     st.sidebar.markdown(
+#         "<h3 style='color: red;'>Displaying Selected SMEs</h1>",
+#         unsafe_allow_html=True)
+#     df_filtered = df_filtered
+
+
+
+# DataFrames for "In Queue" and "In Progress"
+df_inqueue = df[df['Status'] == 'In Queue']
+df_inqueue = df_inqueue[['Case #', 'Requestor','Service','Creation Timestamp', 'Message Link']]
+df_inprogress = df[df['Status'] == 'In Progress']
+df_inprogress = df_inprogress[['Case #', 'Requestor','Service','Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
+
+
+# Metrics
+df['TimeTo: On It Sec'] = df['TimeTo: On It'].apply(convert_to_seconds)
+df['TimeTo: Attended Sec'] = df['TimeTo: Attended'].apply(convert_to_seconds)
+# overall_avg_on_it = df_filtered['TimeTo: On It Sec'].mean()
+# overall_avg_attended = df_filtered['TimeTo: Attended Sec'].mean()
+# unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
+
+# # Display metrics
+# col1, col2, col3, col4, col5 = st.columns(5)
+# with col1:
+#     st.metric(label="Interactions", value=unique_case_count)
+# with col2:
+#     st.metric(label="Survey Avg.", value=f"{survey_avg:.2f}")
+# with col3:
+#     st.metric(label="Answered Surveys", value=survey_count)
+# with col4:
+#     st.metric("Overall Avg. TimeTo: On It", seconds_to_hms(overall_avg_on_it))
+# with col5:
+#     st.metric("Overall Avg. TimeTo: Attended", seconds_to_hms(overall_avg_attended))
+
+
+# Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format
+df['TimeTo: On It'] = pd.to_timedelta(df['TimeTo: On It'])
+df['TimeTo: Attended'] = pd.to_timedelta(df['TimeTo: Attended'])
+
+# Calculate the average seconds directly from 'TimeTo: On It' and 'TimeTo: Attended', and convert to 'hh:mm:ss'
+overall_avg_on_it_sec = df['TimeTo: On It'].dt.total_seconds().mean()
+overall_avg_attended_sec = df['TimeTo: Attended'].dt.total_seconds().mean()
+unique_case_count, survey_avg, survey_count = calculate_metrics(df)
+
+overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
+overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
+
+
+# Display metrics
+col1, col2, col3, col4, col5 = st.columns(5)
+with col1:
+    st.metric(label="Interactions", value=unique_case_count)
+with col2:
+    st.metric(label="Survey Avg.", value=f"{survey_avg:.2f}")
+with col3:
+    st.metric(label="Answered Surveys", value=survey_count)
+with col4:
+    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms)
+with col5:
+    st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms)
+
+# Display "In Queue" DataFrame with count and some text
+in_queue_count = len(df_inqueue)
+
+# Using columns to place text and animation side by side
+if in_queue_count == 0:
+    col1, col2 = st.columns([0.3, 1.2])  # Adjust the ratio as needed for your layout
+    with col1:
+        st.title(f'In Queue (0)')
+    with col2:
+        # Display Lottie animation if count is 0
+        st_lottie(lottie_clap, speed=1, height=100, width=200)  # Adjust height as needed
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(df_inqueue, use_container_width=True)
+else:
+    col1, col2 = st.columns([0.3, 1.2])  # Adjust the ratio as needed for your layout
+    with col1:
+        st.title(f'In Queue ({in_queue_count})')
+    with col2:
+        # Display Lottie animation if count is not 0
+        st_lottie(lottie_queuing, speed=1, height=100, width=200)  # Adjust height as needed
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(df_inqueue, use_container_width=True)
+
+
+# Display "In Progress" DataFrame with count
+in_progress_count = len(df_inprogress)
+if in_progress_count == 0:
+    col1, col2 = st.columns([0.4, 1.2])  # Adjust the ratio as needed for your layout
+    with col1:
+        st.title(f'In Progress (0)')
+    with col2:
+        # Display Lottie animation if count is 0
+        st_lottie(lottie_chill, speed=1, height=100, width=200)  # Adjust height as needed
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(df_inprogress, use_container_width=True)
+else:
+    col1, col2 = st.columns([0.4, 1.2])  # Adjust the ratio as needed for your layout
+    with col1:
+        st.title(f'In Progress ({in_progress_count})')
+    with col2:
+        # Display Lottie animation if count is not 0
+        st_lottie(lottie_inprogress, speed=1, height=100, width=200)  # Adjust height as needed
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(df_inprogress, use_container_width=True)
+
+# Display the filtered dataframe
+st.title('Data')
+with st.expander('Show Data', expanded=False):
+    st.dataframe(df)
+
+agg_month = df.groupby('Month').agg({
+    'TimeTo: On It Sec': 'mean',
+    'TimeTo: Attended Sec': 'mean'
+}).reset_index()
+
+agg_month['TimeTo: On It'] = agg_month['TimeTo: On It Sec'].apply(seconds_to_hms)
+agg_month['TimeTo: Attended'] = agg_month['TimeTo: Attended Sec'].apply(seconds_to_hms)
+
+agg_service = df.groupby('Service').agg({
+    'TimeTo: On It Sec': 'mean',
+    'TimeTo: Attended Sec': 'mean'
+}).reset_index()
+
+agg_service['TimeTo: On It'] = agg_service['TimeTo: On It Sec'].apply(seconds_to_hms)
+agg_service['TimeTo: Attended'] = agg_service['TimeTo: Attended Sec'].apply(seconds_to_hms)
+
+# st.set_option('deprecation.showPyplotGlobalUse', False)
+
+# Instead of converting these columns to datetime, consider converting seconds to minutes or hours for a more interpretable visualization
+agg_month['TimeTo: On It Minutes'] = agg_month['TimeTo: On It Sec'] / 60
+agg_month['TimeTo: Attended Minutes'] = agg_month['TimeTo: Attended Sec'] / 60
+
+col1,col5 = st.columns(2)
+
+# Create an interactive bar chart using Altair
+
+# Adjust the column names to remove spaces and special characters
+agg_month.rename(columns={
+    'TimeTo: On It Minutes': 'TimeTo_On_It_Minutes',
+    'TimeTo: Attended Minutes': 'TimeTo_Attended_Minutes'
+}, inplace=True)
+
+agg_month_long = agg_month.melt(id_vars=['Month'],
+                                value_vars=['TimeTo_On_It_Minutes', 'TimeTo_Attended_Minutes'],
+                                var_name='Category',
+                                value_name='Minutes')
+
+month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# Create a stacked bar chart with months ordered as specified
+chart = alt.Chart(agg_month_long).mark_bar().encode(
+    x=alt.X('Month', sort=month_order),  # Use the 'sort' argument to order months
+    y=alt.Y('Minutes', stack='zero'),  # Use stack='zero' for stacking
+    color='Category',  # Color distinguishes the categories
+    tooltip=['Month', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
+).properties(
+    title='Monthly Response Times',
+    width=600,
+    height=400
+)
+
+# Display the 'Monthly Response Times' chart
+with col1:
+    st.write(chart)
+
+# Convert seconds to minutes directly for 'agg_service'
+agg_service['TimeTo_On_It_Minutes'] = agg_service['TimeTo: On It Sec'] / 60
+agg_service['TimeTo_Attended_Minutes'] = agg_service['TimeTo: Attended Sec'] / 60
+
+# Now, the DataFrame 'agg_service' contains correctly named columns for melting
+agg_service_long = agg_service.melt(id_vars=['Service'],
+                                    value_vars=['TimeTo_On_It_Minutes', 'TimeTo_Attended_Minutes'],
+                                    var_name='Category',
+                                    value_name='Minutes')
+
+# Create a grouped bar chart
+chart2 = alt.Chart(agg_service_long).mark_bar().encode(
+    x='Service',
+    y=alt.Y('Minutes', stack='zero'),  # Use stack='zero' for stacking
+    color='Category',  # Color distinguishes the categories
+    tooltip=['Service', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
+).properties(
+    title='Group Response Times',
+    width=600,
+    height=400
+)
+
+# Display 'Group Response Times'
+with col5:
+    st.write(chart2)
+
+# Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
+chart3 = alt.Chart(df).mark_bar().encode(
+    x='Service',
+    y='count()',
+    tooltip=['Service', 'count()']
+).properties(
+    title='Interaction Count',
+    width=600,
+    height=600
+)
+
+# Display 'Interaction Count' chart
+with col1:
+    st.write(chart3)
+
+# Create an interactive bar chart to show the 'unique case count' for each 'SME (On It)'
+chart4 = alt.Chart(df).mark_bar().encode(
+    y=alt.Y('SME (On It):N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
+    x=alt.X('count()', title='Unique Case Count'),
+    tooltip=['SME (On It)', 'count()']
+).properties(
+    title='Interactions Handled',
+    width=600,
+    height=600
+)
+
+# Display 'Interactions Handled' chart
+with col5:
+    st.write(chart4)
+
+
+# Filter out rows where "Case Reason" or "Case #" is null (adjust column names as necessary)
+# df_filtered = df.dropna(subset=['Case #', 'Case Reason'])
+
+# Group by "Case Reason" and count "Case #" occurrences
+case_counts = df.groupby('Case Reason')['Service'].count().reset_index()
+
+# Sort the DataFrame by counts in ascending order
+case_counts_sorted = case_counts.sort_values(by='Service', ascending=True)
+
+# Generate a pie chart
+fig = px.pie(case_counts_sorted, values='Service', names='Case Reason', title='Distribution of Case Reasons', hole=0.5)
+
+# Show the pie chart in the Streamlit app
+st.plotly_chart(fig)
+
+
+st.subheader('Interaction Count by Requestor')
+
+# Display a Dataframe where the rows are the 'Requestor', the columns would be the 'Service', and the values would be the count of each 'Service'
+
+# Create a pivot table using pandas
+pivot_df = df.pivot_table(index='Requestor', columns='Service', aggfunc='size', fill_value=0)
+
+# Reset the index so 'Requestor' becomes a regular column
+pivot_df.reset_index(inplace=True)
+
+# Setting up GridOptions for AgGrid
+gb = GridOptionsBuilder.from_dataframe(pivot_df)
+gb.configure_pagination(paginationAutoPageSize=False, paginationPageSize=10)  # Enable pagination
+# gb.configure_side_bar(filters_panel=False, columns_panel=False)  # Enable side bar if you want filters and columns tool panel
+gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=False)
+
+gridOptions = gb.build()
+
+# Display the AgGrid component with the configured options
+AgGrid(pivot_df, gridOptions=gridOptions, update_mode=GridUpdateMode.MODEL_CHANGED, fit_columns_on_grid_load=True)
+
+# Convert the DataFrame to CSV
+csv = pivot_df.to_csv(index=False)
+
+# # Create a download button
+# b64 = base64.b64encode(csv.encode()).decode()
+# href = f'<a href="data:file/csv;base64,{b64}" download="interaction_count_by_requestor.csv">Download in CSV</a>'
+# st.markdown(href, unsafe_allow_html=True)
+
+csv = pivot_df.to_csv(index=False).encode('utf-8') 
+
+# Create an download button using st.download_button to download the pivot_df to CSV
+st.download_button('Download Data', csv, file_name='interaction_count_by_requestor.csv', mime='text/csv',help="Download Interaction Count by Requestor Data in CSV format")
+
+st.divider()
+
+# Creating the Summary Table where it sorts the SME (On It) column by first getting the total average TimeTo: On It and average TimeTo: Attended and then sorting it by the number of Interactions
+# and then by the highest average survey.
+
+# Group by 'SME (On It)' and calculate the required metrics including average survey
+df_grouped = df.groupby('SME (On It)').agg(
+    Avg_On_It_Sec=pd.NamedAgg(column='TimeTo: On It Sec', aggfunc='mean'),
+    Avg_Attended_Sec=pd.NamedAgg(column='TimeTo: Attended Sec', aggfunc='mean'),
+    Number_of_Interactions=pd.NamedAgg(column='SME (On It)', aggfunc='count'),
+    Avg_Survey=pd.NamedAgg(column='Survey', aggfunc='mean')  # Calculate the average survey score
+).reset_index()
+
+df_grouped['Total_Avg_Sec'] = df_grouped['Avg_On_It_Sec'] + df_grouped['Avg_Attended_Sec']
+
+# Sort by Total_Avg_Sec, Number_of_Interactions, and then by Avg_Survey in descending order
+df_sorted = df_grouped.sort_values(by=['Total_Avg_Sec', 'Number_of_Interactions', 'Avg_Survey'], ascending=[True, False, False])
+
+df_sorted['Avg_On_It'] = df_sorted['Avg_On_It_Sec'].apply(seconds_to_hms)
+df_sorted['Avg_Attended'] = df_sorted['Avg_Attended_Sec'].apply(seconds_to_hms)
+
+# Rename 'SME (On It)' column to 'SME'
+df_sorted.rename(columns={'SME (On It)': 'SME'}, inplace=True)
+
+# Display "Summary Table"
+st.subheader('SME Summary Table')
+st.dataframe(df_sorted[['SME', 'Avg_On_It', 'Avg_Attended', 'Number_of_Interactions', 'Avg_Survey']].reset_index(drop=True))
+
+
+# Convert the 'Avg_On_It_Sec' and 'Avg_Attended_Sec' columns to minutes
+df_sorted['Avg_On_It_Min'] = df_sorted['Avg_On_It_Sec'] / 60
+df_sorted['Avg_Attended_Min'] = df_sorted['Avg_Attended_Sec'] / 60
+
+st.markdown(":arrow_up: 5 minutes = :red[red]")
+
+# Define the Altair chart for Avg_On_It_Min
+chart_on_it = alt.Chart(df_sorted).mark_bar().encode(
+    x=alt.X('SME', title='SME', sort='-y'),
+    y=alt.Y('Avg_On_It_Min:Q', title='Average Time On It (Minutes)'),
+    color=alt.condition(
+        alt.datum.Avg_On_It_Min > 5,
+        alt.value('red'),
+        alt.value('steelblue')
+    ),
+    tooltip=['SME', alt.Tooltip('Avg_On_It_Min:Q', title='Average Time On It (Minutes)')]
+).properties(
+    width=600,
+    height=400,
+    title='Average Time On It by SME'
+)
+
+# Define the Altair chart for Avg_Attended_Min
+chart_attended = alt.Chart(df_sorted).mark_bar().encode(
+    x=alt.X('SME', title='SME', sort='-y'),
+    y=alt.Y('Avg_Attended_Min:Q', title='Average Time Attended (Minutes)'),
+    tooltip=['SME', alt.Tooltip('Avg_Attended_Min:Q', title='Average Time Attended (Minutes)')]
+).properties(
+    width=600,
+    height=400,
+    title='Average Time Attended by SME'
+)
+
+# Display the charts using Altair's interactive renderer
+st.altair_chart(chart_on_it, use_container_width=True)
+st.altair_chart(chart_attended, use_container_width=True)
+
+# Auto-update every 5 minutes
+refresh_rate = 120  # 300 seconds = 5 minutes
+time.sleep(refresh_rate)
+st.rerun()
