@@ -13,7 +13,7 @@ import plotly.express as px
 
 
 
-st.set_page_config(page_title="Working Hours (5am-4PM)", page_icon=":office:", layout="wide")
+st.set_page_config(page_title="Working Hours (5am-4PM)", page_icon=":city_sunrise:", layout="wide")
 
 
 @st.cache_data(ttl=120, show_spinner=True)

@@ -17,7 +17,7 @@ from io import BytesIO
 
 
 
-st.set_page_config(page_title="SRR Management View", page_icon=":mag_right:", layout="wide")
+st.set_page_config(page_title="Off Hours", page_icon=":city_sunset:", layout="wide")
 
 
 @st.cache_data(ttl=120, show_spinner=True)
