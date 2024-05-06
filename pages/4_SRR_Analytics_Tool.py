@@ -58,7 +58,7 @@ dataframe['TimeTo: Attended Min'] = dataframe['TimeTo: Attended'].apply(convert_
 
 # Display PygWalker interface
 renderer = StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode="rw")
-renderer.render_explore()
+renderer.explorer()
 
 # Function to perform EDA
 def perform_eda(dataframe):
