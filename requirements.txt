@@ -7,3 +7,5 @@ streamlit_lottie
 pygwalker
 streamlit-aggrid
 plotly
+seaborn
+matplotlib

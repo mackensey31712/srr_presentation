@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 st.set_page_config(page_title="srr anlaytics tool", page_icon= ":bar_chart:", layout="wide")
 
@@ -62,6 +65,16 @@ renderer.explorer()
 
 # Function to perform EDA
 def perform_eda(dataframe):
+    numerical_columns = dataframe.select_dtypes(include=np.number).columns
+    correlation_matrix = dataframe[numerical_columns].corr()
+    
+    fig, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", vmin=-1, vmax=1, ax=ax)
+    ax.set_title("Correlation Matrix")
+    
+    col1, buff = st.columns(2)
+    with col1:
+        st.pyplot(fig)
     st.markdown("***Dataset Shape:***")
     st.write(dataframe.shape)
     st.divider()
