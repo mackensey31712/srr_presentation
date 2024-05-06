@@ -13,7 +13,7 @@ import plotly.express as px
 
 
 
-st.set_page_config(page_title="Working Hours (5am-4PM)", page_icon=":city_sunrise:", layout="wide")
+st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_sunrise:", layout="wide")
 
 
 @st.cache_data(ttl=120, show_spinner=True)
@@ -82,7 +82,7 @@ st.markdown(
 )
 
 st.markdown(
-    f"<h3 style='text-align: center;'>Working Hours (5am - 4 pm)</h3>",
+    f"<h3 style='text-align: center;'>Working Hours (M-F, 5am - 4 pm)</h3>",
     unsafe_allow_html=True
 )
 
