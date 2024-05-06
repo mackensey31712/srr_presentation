@@ -22,6 +22,8 @@ def load_data(url):
     df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
     df = df.loc[df['Working Hours?'] == 'Yes'] # Filter Dataframe to only include rows with 'Yes' in the 'Working Hours?' column
+    df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
+    df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
     return df
 
 def calculate_metrics(df):
@@ -269,11 +271,17 @@ else:
         st_lottie(lottie_inprogress, speed=1, height=100, width=200)  # Adjust height as needed
     with st.expander("Show Data", expanded=False):
         st.dataframe(df_inprogress, use_container_width=True)
+filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Timestamp',
+       'SME (On It)', 'On It Time', 'Attendee', 'Attended Timestamp',
+       'Message Link', 'Message Link 0', 'Message Link 1', 'Message Link 2',
+       'Status', 'Case Reason', 'AFI', 'AFI Comment', 'Article#',
+       'TimeTo: On It (Raw)', 'TimeTo: Attended (Raw)','Month', 'Day', 'Weekend?',
+       'Date Created', 'Working Hours?', 'Survey', 'Hour_Created']
 
 # Display the filtered dataframe
 st.title('Data')
 with st.expander('Show Data', expanded=False):
-    st.dataframe(df)
+    st.dataframe(df[filtered_columns], use_container_width=True)
 
 agg_month = df.groupby('Month').agg({
     'TimeTo: On It Sec': 'mean',
