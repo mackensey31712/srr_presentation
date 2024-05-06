@@ -85,8 +85,32 @@ st.markdown(
     f"<h3 style='text-align: center;'>Working Hours (5am - 4 pm)</h3>",
     unsafe_allow_html=True
 )
+
+cols1, cols2, cols3 = st.columns(3)
+
+with cols1:
 # Display Lottie animation
-st_lottie(lottie_people, speed=1, reverse=False, loop=True, quality="low", height=200, width=200, key=None)
+    st_lottie(lottie_people, speed=1, reverse=False, loop=True, quality="low", height=200, width=200, key=None)
+
+with cols2:
+    if st.selectbox:
+        selected_service = st.selectbox('Service', ['All'] + list(df['Service'].unique()))
+
+    # Apply filtering
+    if selected_service != 'All':
+        df_filtered = df[df['Service'] == selected_service]
+    else:
+        df_filtered = df
+
+with cols3:
+    if st.selectbox:
+        selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()))
+
+    # Apply filtering
+    if selected_month != 'All':
+        df_filtered = df_filtered[df_filtered['Month'] == selected_month]
+    else:
+        df_filtered = df_filtered
 
 st.write(':wave: Welcome:exclamation:')
 # st.title('Five9 SRR Management View')
@@ -174,15 +198,15 @@ five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9
 
 
 # DataFrames for "In Queue" and "In Progress"
-df_inqueue = df[df['Status'] == 'In Queue']
+df_inqueue = df_filtered[df_filtered['Status'] == 'In Queue']
 df_inqueue = df_inqueue[['Case #', 'Requestor','Service','Creation Timestamp', 'Message Link']]
-df_inprogress = df[df['Status'] == 'In Progress']
+df_inprogress = df_filtered[df_filtered['Status'] == 'In Progress']
 df_inprogress = df_inprogress[['Case #', 'Requestor','Service','Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
 
 
 # Metrics
-df['TimeTo: On It Sec'] = df['TimeTo: On It'].apply(convert_to_seconds)
-df['TimeTo: Attended Sec'] = df['TimeTo: Attended'].apply(convert_to_seconds)
+df_filtered['TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
+df_filtered['TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
 # overall_avg_on_it = df_filtered['TimeTo: On It Sec'].mean()
 # overall_avg_attended = df_filtered['TimeTo: Attended Sec'].mean()
 # unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
@@ -202,13 +226,13 @@ df['TimeTo: Attended Sec'] = df['TimeTo: Attended'].apply(convert_to_seconds)
 
 
 # Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format
-df['TimeTo: On It'] = pd.to_timedelta(df['TimeTo: On It'])
-df['TimeTo: Attended'] = pd.to_timedelta(df['TimeTo: Attended'])
+df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'])
+df_filtered['TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'])
 
 # Calculate the average seconds directly from 'TimeTo: On It' and 'TimeTo: Attended', and convert to 'hh:mm:ss'
-overall_avg_on_it_sec = df['TimeTo: On It'].dt.total_seconds().mean()
-overall_avg_attended_sec = df['TimeTo: Attended'].dt.total_seconds().mean()
-unique_case_count, survey_avg, survey_count = calculate_metrics(df)
+overall_avg_on_it_sec = df_filtered['TimeTo: On It'].dt.total_seconds().mean()
+overall_avg_attended_sec = df_filtered['TimeTo: Attended'].dt.total_seconds().mean()
+unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
 
 overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
 overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
@@ -281,9 +305,9 @@ filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Times
 # Display the filtered dataframe
 st.title('Data')
 with st.expander('Show Data', expanded=False):
-    st.dataframe(df[filtered_columns], use_container_width=True)
+    st.dataframe(df_filtered[filtered_columns], use_container_width=True)
 
-agg_month = df.groupby('Month').agg({
+agg_month = df_filtered.groupby('Month').agg({
     'TimeTo: On It Sec': 'mean',
     'TimeTo: Attended Sec': 'mean'
 }).reset_index()
@@ -291,7 +315,7 @@ agg_month = df.groupby('Month').agg({
 agg_month['TimeTo: On It'] = agg_month['TimeTo: On It Sec'].apply(seconds_to_hms)
 agg_month['TimeTo: Attended'] = agg_month['TimeTo: Attended Sec'].apply(seconds_to_hms)
 
-agg_service = df.groupby('Service').agg({
+agg_service = df_filtered.groupby('Service').agg({
     'TimeTo: On It Sec': 'mean',
     'TimeTo: Attended Sec': 'mean'
 }).reset_index()
@@ -365,7 +389,7 @@ with col5:
     st.write(chart2)
 
 # Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
-chart3 = alt.Chart(df).mark_bar().encode(
+chart3 = alt.Chart(df_filtered).mark_bar().encode(
     x='Service',
     y='count()',
     tooltip=['Service', 'count()']
@@ -380,7 +404,7 @@ with col1:
     st.write(chart3)
 
 # Create an interactive bar chart to show the 'unique case count' for each 'SME (On It)'
-chart4 = alt.Chart(df).mark_bar().encode(
+chart4 = alt.Chart(df_filtered).mark_bar().encode(
     y=alt.Y('SME (On It):N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
     x=alt.X('count()', title='Unique Case Count'),
     tooltip=['SME (On It)', 'count()']
@@ -399,7 +423,7 @@ with col5:
 # df_filtered = df.dropna(subset=['Case #', 'Case Reason'])
 
 # Group by "Case Reason" and count "Case #" occurrences
-case_counts = df.groupby('Case Reason')['Service'].count().reset_index()
+case_counts = df_filtered.groupby('Case Reason')['Service'].count().reset_index()
 
 # Sort the DataFrame by counts in ascending order
 case_counts_sorted = case_counts.sort_values(by='Service', ascending=True)
@@ -416,7 +440,7 @@ st.subheader('Interaction Count by Requestor')
 # Display a Dataframe where the rows are the 'Requestor', the columns would be the 'Service', and the values would be the count of each 'Service'
 
 # Create a pivot table using pandas
-pivot_df = df.pivot_table(index='Requestor', columns='Service', aggfunc='size', fill_value=0)
+pivot_df = df_filtered.pivot_table(index='Requestor', columns='Service', aggfunc='size', fill_value=0)
 
 # Reset the index so 'Requestor' becomes a regular column
 pivot_df.reset_index(inplace=True)
@@ -451,7 +475,7 @@ st.divider()
 # and then by the highest average survey.
 
 # Group by 'SME (On It)' and calculate the required metrics including average survey
-df_grouped = df.groupby('SME (On It)').agg(
+df_grouped = df_filtered.groupby('SME (On It)').agg(
     Avg_On_It_Sec=pd.NamedAgg(column='TimeTo: On It Sec', aggfunc='mean'),
     Avg_Attended_Sec=pd.NamedAgg(column='TimeTo: Attended Sec', aggfunc='mean'),
     Number_of_Interactions=pd.NamedAgg(column='SME (On It)', aggfunc='count'),
