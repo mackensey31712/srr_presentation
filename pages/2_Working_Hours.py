@@ -13,7 +13,7 @@ import plotly.express as px
 
 
 
-st.set_page_config(page_title="SRR Management View", page_icon=":mag_right:", layout="wide")
+st.set_page_config(page_title="Working Hours (5am-4PM)", page_icon=":office:", layout="wide")
 
 
 @st.cache_data(ttl=120, show_spinner=True)
@@ -79,6 +79,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.markdown(
+    f"<h3 style='text-align: center;'>Working Hours (5am - 4 pm)</h3>",
+    unsafe_allow_html=True
+)
 # Display Lottie animation
 st_lottie(lottie_people, speed=1, reverse=False, loop=True, quality="low", height=200, width=200, key=None)
 
