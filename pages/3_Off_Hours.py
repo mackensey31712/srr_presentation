@@ -235,6 +235,60 @@ st.title('Data')
 with st.expander('Show Data', expanded=False):
     st.dataframe(df_filtered[filtered_columns], use_container_width=True)
 
+"---"
+col1, col2 = st.columns(2)
+
+with col1:
+
+    # Create a line chart showing the average number of "Service" by "Hour_Created"
+    agg_hour = df_filtered.groupby('Hour_Created').agg({
+        'Service': 'count'
+    }).reset_index()
+
+    fig = px.line(agg_hour, x='Hour_Created', y='Service', title='Hourly Average Interactions (SRR)', labels={'Service': 'Count of Interactions'})
+    st.plotly_chart(fig, use_container_width=True)
+
+    csv = agg_hour.to_csv(index=False).encode('utf-8') 
+
+    st.download_button('Download Data', csv, file_name='average_SRR_by_hour.csv', mime='text/csv',help="Click to download the Hourly Average Interactions (SRR) in CSV format")
+
+
+with col2:
+
+    # Create a line chart that would show the average 'TimeTo: On It' in minutes by "Hour_Created".# Group by 'Hour_Created' and calculate mean 'TimeTo: On It Sec'
+    agg_hour_on_it = df_filtered.groupby('Hour_Created')[['TimeTo: On It Sec']].mean().reset_index()
+
+    # Convert mean 'TimeTo: On It Sec' to minutes
+    agg_hour_on_it['TimeTo: On It Minutes'] = agg_hour_on_it['TimeTo: On It Sec'] / 60
+
+    # Create the line chart
+    fig = px.line(agg_hour_on_it, x='Hour_Created', y='TimeTo: On It Minutes', title='Average Timeto: On It By The Hour')
+    st.plotly_chart(fig, use_container_width=True)
+
+    csv = agg_hour_on_it.to_csv(index=False).encode('utf-8') 
+
+    # Lets create an st.button to download the chart data in csv format
+    st.download_button('Download Data', csv, file_name='average_time_to_on_it.csv', mime='text/csv',help="Click to download the Average Time to On It by Hour in CSV format")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    pivot_table = df_filtered.pivot_table(index='Hour_Created', columns='Case Reason', values='Service', aggfunc='count', fill_value=0)
+
+    # Create the stacked bar chart
+    fig = px.bar(pivot_table, x=pivot_table.index, y=pivot_table.columns, barmode='stack', title='Case Reason Distribution by Hour')
+
+    # Customize the layout
+    fig.update_layout(
+        xaxis_title='Hour',
+        yaxis_title='Count',
+        legend_title='Case Reason',
+        xaxis=dict(tickangle=0),  # Rotate x-axis labels by 45 degrees
+    )
+
+    # Display the chart in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
 agg_month = df_filtered.groupby('Month').agg({
     'TimeTo: On It Sec': 'mean',
     'TimeTo: Attended Sec': 'mean'
@@ -256,6 +310,18 @@ agg_service['TimeTo: Attended'] = agg_service['TimeTo: Attended Sec'].apply(seco
 # Instead of converting these columns to datetime, consider converting seconds to minutes or hours for a more interpretable visualization
 agg_month['TimeTo: On It Minutes'] = agg_month['TimeTo: On It Sec'] / 60
 agg_month['TimeTo: Attended Minutes'] = agg_month['TimeTo: Attended Sec'] / 60
+
+with col2:
+    
+    # Group by 'Case Reason' and calculate the mean 'TimeTo: Attended Sec'
+    avg_attended_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
+
+    # Convert the mean 'TimeTo: Attended Sec' to a readable time format
+    avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
+
+    # Display the table
+    st.markdown('***Average TimeTo: Attended by Case Reason***')
+    st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
 
 col1,col5 = st.columns(2)
 

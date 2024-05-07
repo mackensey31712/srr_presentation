@@ -119,84 +119,6 @@ st.write(':wave: Welcome:exclamation:')
 # Insert Five9 logo
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
-
-# st.sidebar.image(five9logo_url, width=200)
-
-# # Sidebar Title
-# st.sidebar.markdown('# Select a **Filter:**')
-
-
-# with st.sidebar:
-#     all_services_options = ['All'] + list(df['Service'].unique())
-#     selected_service = st.multiselect('Service - (Multi-Select)', all_services_options, default='All')
-
-# # Apply filtering
-# if 'All' in selected_service:
-#     df_filtered = df
-
-# elif not selected_service:
-#     # If nothing is selected, display a message indicating all services are being displayed
-#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All Services</h1>", unsafe_allow_html=True)
-#     df_filtered = df
-# else:
-#     df_filtered = df[df['Service'].isin(selected_service)]
-    
-
-# # Create a date_input widget for 'Date Created' column filtering.
-# start_date = st.sidebar.date_input('Start Date', value=df_filtered['Date Created'].min(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
-# end_date = st.sidebar.date_input('End Date', value=df_filtered['Date Created'].max(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
-
-# # Convert start_date and end_date to datetime objects
-# start_date = pd.to_datetime(start_date)
-# end_date = pd.to_datetime(end_date)
-
-# # Apply filtering
-# df_filtered = df_filtered[(df_filtered['Date Created'] >= start_date) & (df_filtered['Date Created'] <= end_date)]
-
-# # Sidebar with a dropdown for 'Weekend?' column filtering
-# with st.sidebar:
-#     selected_weekend = st.selectbox('Weekend?', ['All', 'Yes', 'No'])
-
-# # Apply filtering
-# if selected_weekend != 'All':
-#     df_filtered = df_filtered[df_filtered['Weekend?'] == selected_weekend]
-# else:
-#     df_filtered = df_filtered
-
-# # Sidebar with a dropdown for 'Working Hours?' column filtering
-# with st.sidebar:
-#     selected_working_hours = st.selectbox('Working Hours?', ['All', 'Yes', 'No'])
-
-# # Apply filtering
-# if selected_working_hours != 'All':
-#     df_filtered = df_filtered[df_filtered['Working Hours?'] == selected_working_hours]
-# else:
-#     df_filtered = df_filtered
-
-# # Sidebar with a multi-select dropdown for 'SME (On It)' column filtering
-# with st.sidebar:
-#     all_sme_options = ['All'] + list(df_filtered['SME (On It)'].unique())
-#     selected_sme_on_it = st.multiselect('SME (On It) - (Multi-Select)', all_sme_options, default='All')
-
-
-# # Check the selection conditions
-# if 'All' in selected_sme_on_it:
-#     # If 'All' is selected, display the whole filtered dataframe without a message
-#     st.sidebar.markdown("---")
-# elif not selected_sme_on_it:
-#     # If nothing is selected, display a message indicating all SMEs are being displayed
-#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All SMEs</h1>", unsafe_allow_html=True)
-    
-# else:
-#     # If specific SMEs are selected, filter the dataframe and display the result
-#     df_filtered = df_filtered[df_filtered['SME (On It)'].isin(selected_sme_on_it)]
-#     st.sidebar.markdown(
-#         "<h3 style='color: red;'>Displaying Selected SMEs</h1>",
-#         unsafe_allow_html=True)
-#     df_filtered = df_filtered
-
-
-
 # DataFrames for "In Queue" and "In Progress"
 df_inqueue = df_filtered[df_filtered['Status'] == 'In Queue']
 df_inqueue = df_inqueue[['Case #', 'Requestor','Service','Creation Timestamp', 'Message Link']]
@@ -207,23 +129,6 @@ df_inprogress = df_inprogress[['Case #', 'Requestor','Service','Creation Timesta
 # Metrics
 df_filtered['TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
 df_filtered['TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
-# overall_avg_on_it = df_filtered['TimeTo: On It Sec'].mean()
-# overall_avg_attended = df_filtered['TimeTo: Attended Sec'].mean()
-# unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
-
-# # Display metrics
-# col1, col2, col3, col4, col5 = st.columns(5)
-# with col1:
-#     st.metric(label="Interactions", value=unique_case_count)
-# with col2:
-#     st.metric(label="Survey Avg.", value=f"{survey_avg:.2f}")
-# with col3:
-#     st.metric(label="Answered Surveys", value=survey_count)
-# with col4:
-#     st.metric("Overall Avg. TimeTo: On It", seconds_to_hms(overall_avg_on_it))
-# with col5:
-#     st.metric("Overall Avg. TimeTo: Attended", seconds_to_hms(overall_avg_attended))
-
 
 # Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format
 df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'])
@@ -307,6 +212,59 @@ st.title('Data')
 with st.expander('Show Data', expanded=False):
     st.dataframe(df_filtered[filtered_columns], use_container_width=True)
 
+"---"
+col1, col2 = st.columns(2)
+
+with col1:
+
+    # Create a line chart showing the average number of "Service" by "Hour_Created"
+    agg_hour = df_filtered.groupby('Hour_Created').agg({
+        'Service': 'count'
+    }).reset_index()
+
+    fig = px.line(agg_hour, x='Hour_Created', y='Service', title='Hourly Average Interactions (SRR)', labels={'Service': 'Count of Interactions'})
+    st.plotly_chart(fig, use_container_width=True)
+
+    csv = agg_hour.to_csv(index=False).encode('utf-8') 
+
+    st.download_button('Download Data', csv, file_name='average_SRR_by_hour.csv', mime='text/csv',help="Click to download the Hourly Average Interactions (SRR) in CSV format")
+
+
+with col2:
+
+    # Create a line chart that would show the average 'TimeTo: On It' in minutes by "Hour_Created".# Group by 'Hour_Created' and calculate mean 'TimeTo: On It Sec'
+    agg_hour_on_it = df_filtered.groupby('Hour_Created')[['TimeTo: On It Sec']].mean().reset_index()
+
+    # Convert mean 'TimeTo: On It Sec' to minutes
+    agg_hour_on_it['TimeTo: On It Minutes'] = agg_hour_on_it['TimeTo: On It Sec'] / 60
+
+    # Create the line chart
+    fig = px.line(agg_hour_on_it, x='Hour_Created', y='TimeTo: On It Minutes', title='Average Timeto: On It By The Hour')
+    st.plotly_chart(fig, use_container_width=True)
+
+    csv = agg_hour_on_it.to_csv(index=False).encode('utf-8') 
+
+    # Lets create an st.button to download the chart data in csv format
+    st.download_button('Download Data', csv, file_name='average_time_to_on_it.csv', mime='text/csv',help="Click to download the Average Time to On It by Hour in CSV format")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    pivot_table = df_filtered.pivot_table(index='Hour_Created', columns='Case Reason', values='Service', aggfunc='count', fill_value=0)
+
+    # Create the stacked bar chart
+    fig = px.bar(pivot_table, x=pivot_table.index, y=pivot_table.columns, barmode='stack', title='Case Reason Distribution by Hour')
+
+    # Customize the layout
+    fig.update_layout(
+        xaxis_title='Hour',
+        yaxis_title='Count',
+        legend_title='Case Reason',
+        xaxis=dict(tickangle=0),  # Rotate x-axis labels by 45 degrees
+    )
+
+    # Display the chart in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
 agg_month = df_filtered.groupby('Month').agg({
     'TimeTo: On It Sec': 'mean',
     'TimeTo: Attended Sec': 'mean'
@@ -328,6 +286,19 @@ agg_service['TimeTo: Attended'] = agg_service['TimeTo: Attended Sec'].apply(seco
 # Instead of converting these columns to datetime, consider converting seconds to minutes or hours for a more interpretable visualization
 agg_month['TimeTo: On It Minutes'] = agg_month['TimeTo: On It Sec'] / 60
 agg_month['TimeTo: Attended Minutes'] = agg_month['TimeTo: Attended Sec'] / 60
+
+with col2:
+    
+    # Group by 'Case Reason' and calculate the mean 'TimeTo: Attended Sec'
+    avg_attended_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
+
+    # Convert the mean 'TimeTo: Attended Sec' to a readable time format
+    avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
+
+    # Display the table
+    st.markdown('***Average TimeTo: Attended by Case Reason***')
+    st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
+
 
 col1,col5 = st.columns(2)
 
