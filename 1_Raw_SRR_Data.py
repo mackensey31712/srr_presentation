@@ -355,12 +355,27 @@ agg_service['TimeTo: Attended'] = agg_service['TimeTo: Attended Sec'].apply(seco
 
 # st.set_option('deprecation.showPyplotGlobalUse', False)
 
-# Instead of converting these columns to datetime, consider converting seconds to minutes or hours for a more interpretable visualization
+# converting seconds to minutes or hours for a more interpretable visualization
 agg_month['TimeTo: On It Minutes'] = agg_month['TimeTo: On It Sec'] / 60
 agg_month['TimeTo: Attended Minutes'] = agg_month['TimeTo: Attended Sec'] / 60
 
 with col2:
     
+    # Group by "Case Reason" and count "Case #" occurrences
+    case_counts = df.groupby('Case Reason')['Service'].count().reset_index()
+
+    # Sort the DataFrame by counts in ascending order
+    case_counts_sorted = case_counts.sort_values(by='Service', ascending=True)
+
+    # Generate a pie chart
+    fig = px.pie(case_counts_sorted, values='Service', names='Case Reason', title='Distribution of Case Reasons', hole=0.5)
+
+    # Show the pie chart in the Streamlit app
+    st.plotly_chart(fig)
+
+col1, col2 = st.columns(2)
+
+with col1:
     # Group by 'Case Reason' and calculate the mean 'TimeTo: Attended Sec'
     avg_attended_by_case_reason = df.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
 
@@ -368,8 +383,22 @@ with col2:
     avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
 
     # Display the table
-    st.markdown('***Average TimeTo: Attended by Case Reason***')
+    st.subheader('Average TimeTo: Attended by Case Reason')
     st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
+
+
+with col2:
+     # Group by 'Case Reason' and calculate the mean 'TimeTo: Attended Sec'
+    avg_on_it_by_case_reason = df.groupby('Case Reason')['TimeTo: On It Sec'].mean().reset_index().sort_values(by='TimeTo: On It Sec', ascending=False)
+
+    # Convert the mean 'TimeTo: Attended Sec' to a readable time format
+    avg_on_it_by_case_reason['Avg TimeTo: On It'] = avg_on_it_by_case_reason['TimeTo: On It Sec'].apply(seconds_to_hms)
+
+    # Display the table
+    st.subheader('Average TimeTo: On It by Case Reason')
+    st.dataframe(avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True), use_container_width=True)
+
+
 
 col1,col5 = st.columns(2)
 
@@ -461,25 +490,7 @@ with col5:
     st.write(chart4)
 
 
-# Filter out rows where "Case Reason" or "Case #" is null (adjust column names as necessary)
-# df_filtered = df.dropna(subset=['Case #', 'Case Reason'])
-
-# Group by "Case Reason" and count "Case #" occurrences
-case_counts = df.groupby('Case Reason')['Service'].count().reset_index()
-
-# Sort the DataFrame by counts in ascending order
-case_counts_sorted = case_counts.sort_values(by='Service', ascending=True)
-
-# Generate a pie chart
-fig = px.pie(case_counts_sorted, values='Service', names='Case Reason', title='Distribution of Case Reasons', hole=0.5)
-
-# Show the pie chart in the Streamlit app
-st.plotly_chart(fig)
-
-
 st.subheader('Interaction Count by Requestor')
-
-# Display a Dataframe where the rows are the 'Requestor', the columns would be the 'Service', and the values would be the count of each 'Service'
 
 # Create a pivot table using pandas
 pivot_df = df.pivot_table(index='Requestor', columns='Service', aggfunc='size', fill_value=0)
