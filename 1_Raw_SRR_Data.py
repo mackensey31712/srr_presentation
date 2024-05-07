@@ -293,22 +293,35 @@ with st.expander('Show Data', expanded=False):
 col1, col2 = st.columns(2)
 
 with col1:
-    # Create a line chart showing the average number of "Service" by "Hour_Created"
-        agg_hour = df.groupby('Hour_Created').agg({
-            'Service': 'count'
-        }).reset_index()
-        agg_hour.rename(columns={'Service': 'Interactions'}, inplace=True)
+    # Create a bar chart showing the stacked counts of "Service" by "Hour_Created"
+    agg_hour_service = df.groupby(['Hour_Created', 'Service']).size().unstack(fill_value=0).reset_index()
 
-        fig = px.line(agg_hour, x='Hour_Created', y='Interactions', title='Hourly Average Interactions (SRR)')
-        st.plotly_chart(fig, use_container_width=True)
+    # Sum of counts for each hour to use as data labels
+    agg_hour_service['Total'] = agg_hour_service.iloc[:, 1:].sum(axis=1)
 
-        csv = agg_hour.to_csv(index=False).encode('utf-8')
+    fig = px.bar(agg_hour_service, x='Hour_Created', y=agg_hour_service.columns[1:-1], title='Hourly Interactions by Service',
+                labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation'}, 
+                category_orders={'Service': agg_hour_service.columns[1:-1]})
+    fig.update_layout(barmode='stack')
 
-        # Show the data in a collapsible table
-        with st.expander("Show Data", expanded=False):
-            st.dataframe(agg_hour, use_container_width=True)
-            # Download button
-            st.download_button('Download Data', csv, file_name='average_SRR_by_hour.csv', mime='text/csv', help="Click to download the Hourly Average Interactions (SRR) in CSV format")
+    # Add data labels with total counts
+    for i in range(len(agg_hour_service)):
+        fig.add_annotation(x=agg_hour_service['Hour_Created'][i], y=agg_hour_service['Total'][i],
+                        text=str(agg_hour_service['Total'][i]),
+                        showarrow=False,
+                        yshift=5,  # Adjust the y-shift to move the label above the bar
+                        font=dict(color='black', size=10))  # Adjust font color and size
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    csv = agg_hour_service.to_csv(index=False).encode('utf-8')
+
+    # Show the data in a collapsible table
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(agg_hour_service, use_container_width=True)
+        # Download button
+        st.download_button('Download Data', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', 
+                        help="Click to download the Hourly Interactions by Service in CSV format")
 
 
 with col2:
