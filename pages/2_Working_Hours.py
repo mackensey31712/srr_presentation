@@ -47,6 +47,12 @@ def seconds_to_hms(seconds):
     seconds = seconds % 60
     return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
+def minutes_to_hms(minutes):
+    hours = int(minutes // 60)
+    mins = int(minutes % 60)
+    secs = 0
+    return f"{hours:02d}:{mins:02d}:{secs:02d}"
+
 def convert_df_to_csv(df):
     return df.to_csv(index=False).encode('utf-8')
 
@@ -216,23 +222,27 @@ with st.expander('Show Data', expanded=False):
 col1, col2 = st.columns(2)
 
 with col1:
-
     # Create a line chart showing the average number of "Service" by "Hour_Created"
-    agg_hour = df_filtered.groupby('Hour_Created').agg({
-        'Service': 'count'
-    }).reset_index()
+        agg_hour = df_filtered.groupby('Hour_Created').agg({
+            'Service': 'count'
+        }).reset_index()
+        agg_hour.rename(columns={'Service': 'Interactions'}, inplace=True)
 
-    fig = px.line(agg_hour, x='Hour_Created', y='Service', title='Hourly Average Interactions (SRR)', labels={'Service': 'Count of Interactions'})
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.line(agg_hour, x='Hour_Created', y='Interactions', title='Hourly Average Interactions (SRR)')
+        st.plotly_chart(fig, use_container_width=True)
 
-    csv = agg_hour.to_csv(index=False).encode('utf-8') 
+        csv = agg_hour.to_csv(index=False).encode('utf-8')
 
-    st.download_button('Download Data', csv, file_name='average_SRR_by_hour.csv', mime='text/csv',help="Click to download the Hourly Average Interactions (SRR) in CSV format")
+        # Show the data in a collapsible table
+        with st.expander("Show Data", expanded=False):
+            st.dataframe(agg_hour, use_container_width=True)
+            # Download button
+            st.download_button('Download Data', csv, file_name='average_SRR_by_hour.csv', mime='text/csv', help="Click to download the Hourly Average Interactions (SRR) in CSV format")
 
 
 with col2:
-
-    # Create a line chart that would show the average 'TimeTo: On It' in minutes by "Hour_Created".# Group by 'Hour_Created' and calculate mean 'TimeTo: On It Sec'
+    # Create a line chart that would show the average 'TimeTo: On It' in minutes by "Hour_Created"
+    # Group by 'Hour_Created' and calculate mean 'TimeTo: On It Sec'
     agg_hour_on_it = df_filtered.groupby('Hour_Created')[['TimeTo: On It Sec']].mean().reset_index()
 
     # Convert mean 'TimeTo: On It Sec' to minutes
@@ -242,10 +252,16 @@ with col2:
     fig = px.line(agg_hour_on_it, x='Hour_Created', y='TimeTo: On It Minutes', title='Average Timeto: On It By The Hour')
     st.plotly_chart(fig, use_container_width=True)
 
-    csv = agg_hour_on_it.to_csv(index=False).encode('utf-8') 
+    # Convert 'TimeTo: On It Minutes' to "h:mm:ss" format
+    agg_hour_on_it['TimeTo: On It HH:MM:SS'] = agg_hour_on_it['TimeTo: On It Minutes'].apply(minutes_to_hms)
 
-    # Lets create an st.button to download the chart data in csv format
-    st.download_button('Download Data', csv, file_name='average_time_to_on_it.csv', mime='text/csv',help="Click to download the Average Time to On It by Hour in CSV format")
+    csv = agg_hour_on_it.to_csv(index=False).encode('utf-8')
+
+    # Show the data in a collapsible table
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
+        # Download button
+        st.download_button('Download Data', csv, file_name='average_time_to_on_it.csv', mime='text/csv', help="Click to download the Average Time to On It by Hour in CSV format")
 
 col1, col2 = st.columns(2)
 
