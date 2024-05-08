@@ -14,20 +14,31 @@ from st_aggrid.shared import JsCode
 import plotly.express as px
 import base64
 from io import BytesIO
-
+from streamlit_gsheets import GSheetsConnection
 
 
 st.set_page_config(page_title="Off Hours", page_icon=":city_sunset:", layout="wide")
 
 
+# @st.cache_data(ttl=120, show_spinner=True)
+# def load_data(url):
+#     df = pd.read_csv(url)
+#     df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
+#     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
+#     df = df.loc[df['Working Hours?'] == 'No'] # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column
+#     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
+#     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
+#     return df
+
 @st.cache_data(ttl=120, show_spinner=True)
-def load_data(url):
-    df = pd.read_csv(url)
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
-    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
-    df = df.loc[df['Working Hours?'] == 'No'] # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column
+def load_data(data):
+    df = data.copy()  # Make a copy to avoid modifying the original DataFrame
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
+    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
+    df = df.loc[df['Working Hours?'] == 'No'] # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column  
     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
+    df.dropna(subset=['Service'], inplace=True)
     return df
 
 def calculate_metrics(df):
@@ -60,8 +71,12 @@ def minutes_to_hms(minutes):
 def convert_df_to_csv(df):
     return df.to_csv(index=False).encode('utf-8')
 
-url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
-df = load_data(url).copy()
+# url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
+# df = load_data(url).copy()
+
+conn = st.connection("gsheets", type=GSheetsConnection)
+data = conn.read(worksheet="Response and Survey Form")
+df = load_data(data).copy()
 
 # Function to load a lottie animation from a URL
 def load_lottieurl(url: str):

@@ -9,3 +9,4 @@ streamlit-aggrid
 plotly
 seaborn
 matplotlib
+st-gsheets-connection

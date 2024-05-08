@@ -4,6 +4,7 @@ from pygwalker.api.streamlit import StreamlitRenderer, init_streamlit_comm
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="srr anlaytics tool", page_icon= ":bar_chart:", layout="wide")
 
@@ -15,15 +16,30 @@ st.write("---")
 
 
 # Function to load data
+# @st.cache_data(ttl=120, show_spinner=True)
+# def load_data(url):
+#     df = pd.read_csv(url)
+#     df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
+#     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
+#     return df
+
 @st.cache_data(ttl=120, show_spinner=True)
-def load_data(url):
-    df = pd.read_csv(url)
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
-    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
+def load_data(data):
+    df = data.copy()  # Make a copy to avoid modifying the original DataFrame
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
+    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  
+    df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
+    df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
+    df.dropna(subset=['Service'], inplace=True)
     return df
 
-url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
-dataframe = load_data(url).copy()
+# url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
+# dataframe = load_data(url).copy()
+
+conn = st.connection("gsheets", type=GSheetsConnection)
+data = conn.read(worksheet="Response and Survey Form")
+df = load_data(data).copy()
+
 
 def convert_to_seconds(time_str):
         if pd.isnull(time_str):
