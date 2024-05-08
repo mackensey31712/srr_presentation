@@ -10,15 +10,9 @@ st.set_page_config(page_title="srr anlaytics tool", page_icon= ":bar_chart:", la
 
 # Adjust the width of the Streamlit page
 
-    # Main header
+# Main header
 st.title("SRR Analytics Tool 📊")
 st.write("---")
-
-# Log out button
-if st.sidebar.button("Log Out"):
-    st.session_state.user_authenticated = False
-    st.session_state.username = ""
-    st.rerun()
 
 # Function to load data
 @st.cache_data(ttl=120, show_spinner=True)
@@ -68,7 +62,7 @@ dataframe['TimeTo: On It Min'] = dataframe['TimeTo: On It'].apply(convert_to_min
 dataframe['TimeTo: Attended Min'] = dataframe['TimeTo: Attended'].apply(convert_to_minutes)
 
 # Display PygWalker interface
-renderer = StreamlitRenderer(dataframe, spec="./gw_config.json", spec_io_mode="rw")
+renderer = StreamlitRenderer(dataframe)
 renderer.explorer()
 
 # Function to perform EDA
