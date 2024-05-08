@@ -38,7 +38,7 @@ def load_data(data):
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 data = conn.read(worksheet="Response and Survey Form")
-df = load_data(data).copy()
+dataframe = load_data(data).copy()
 
 
 def convert_to_seconds(time_str):
