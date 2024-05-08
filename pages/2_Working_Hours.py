@@ -6,7 +6,6 @@ import altair as alt
 from streamlit_lottie import st_lottie
 import requests
 import streamlit.components.v1 as components
-import pygwalker as pyg
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from st_aggrid.shared import JsCode
 import plotly.express as px
