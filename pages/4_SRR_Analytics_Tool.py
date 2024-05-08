@@ -141,8 +141,8 @@ def perform_eda(dataframe):
         # Selection for detailed duplicate view
         column_to_view = st.selectbox("Select a column to view duplicates:", options=list(duplicates_info.keys()))
         
-        # Display duplicates for the selected column
-        duplicates = dataframe[dataframe.duplicated(subset=[column_to_view], keep=False)].sort_values(by=[column_to_view])
+        # Display duplicates for the selected column and sorts it by the index
+        duplicates = dataframe[dataframe.duplicated(subset=[column_to_view], keep=False)].sort_index()
         st.write(f"Duplicates in '{column_to_view}':")
         st.dataframe(duplicates)
     else:
