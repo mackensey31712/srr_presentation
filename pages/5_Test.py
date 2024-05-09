@@ -4,12 +4,12 @@ import streamlit as st
  
 # Adjust the width of the Streamlit page
 st.set_page_config(
-    page_title="SRR Anlaytics Tool",
+    page_title="Test",
     layout="wide"
 )
  
 # Add Title
-st.title("SRR Anlaytics Tool")
+st.title("Test")
  
 # You should cache your pygwalker renderer, if you don't want your memory to explode
 @st.cache_resource
