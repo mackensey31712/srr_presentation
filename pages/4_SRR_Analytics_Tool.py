@@ -16,22 +16,32 @@ st.title("SRR Analytics Tool 📊")
 st.write("---")
 
 # Function to load data
+# @st.cache_data(ttl=120, show_spinner=True)
+# def load_data(data):
+#     df = data.copy()  # Make a copy to avoid modifying the original DataFrame
+#     df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
+#     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
+#     df.rename(columns={'Case #': 'Case_number'}, inplace=True)  
+#     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
+#     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
+#     df['Case_number'] = df['Case_number'].astype("str")
+#     df.dropna(subset=['Service'], inplace=True)
+#     return df
+
 @st.cache_data(ttl=120, show_spinner=True)
-def load_data(data):
-    df = data.copy()  # Make a copy to avoid modifying the original DataFrame
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
-    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
-    df.rename(columns={'Case #': 'Case_number'}, inplace=True)  
-    df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
+def load_data(url):
+    df = pd.read_csv(url)
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
+    df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming columndf['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
-    df['Case_number'] = df['Case_number'].astype("str")
-    df.dropna(subset=['Service'], inplace=True)
     return df
 
 # url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
-conn = st.connection("gsheets", type=GSheetsConnection)
-data = conn.read(worksheet="Response and Survey Form", usecols=list(range(27)))
-dataframe = load_data(data).copy()
+url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv'
+dataframe = load_data(url).copy()
+# conn = st.connection("gsheets", type=GSheetsConnection)
+# data = conn.read(worksheet="Response and Survey Form", usecols=list(range(27)))
+# dataframe = load_data(data).copy()
 
 def convert_to_seconds(time_str):
     if pd.isnull(time_str):
