@@ -1,43 +1,24 @@
-from pygwalker.api.streamlit import StreamlitRenderer
+import pygwalker as pyg
 import pandas as pd
+import streamlit.components.v1 as components
 import streamlit as st
  
 # Adjust the width of the Streamlit page
 st.set_page_config(
-    page_title="SRR Anlaytics Tool",
+    page_title="Use Pygwalker In Streamlit",
     layout="wide"
 )
  
 # Add Title
-st.title("SRR Anlaytics Tool")
+st.title("Use Pygwalker In Streamlit")
  
-# You should cache your pygwalker renderer, if you don't want your memory to explode
-@st.cache_resource
-def get_pyg_renderer() -> "StreamlitRenderer":
-    df = pd.read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv')
-    # If you want to use feature of saving chart config, set `spec_io_mode="rw"`
-    return StreamlitRenderer(df, spec="./gw_config.json")
+# Import your data
+df = pd.read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vSQVnfH-edbXqAXxlCb2FrhxxpsOHJhtqKMYsHWxf5SyLVpAPTSIWQeIGrBAGa16dE4CA59o2wyz59G/pub?gid=0&single=true&output=csv')
+# Paste the copied Pygwalker chart code here
+vis_spec = """[{"visId":"gw_rZy5","name":"Chart 1","encodings":{"dimensions":[{"dragId":"gw_BUE2","fid":"ZGF0ZV8x","name":"date","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_x1ug","fid":"bW9udGhfMg==","name":"month","semanticType":"ordinal","analyticType":"dimension"},{"dragId":"gw_zRAa","fid":"c2Vhc29uXzM=","name":"season","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_ZeVh","fid":"eWVhcl81","name":"year","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_JqXv","fid":"aG9saWRheV82","name":"holiday","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_OD2F","fid":"d29yayB5ZXMgb3Igbm90XzE0","name":"work yes or not","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_KgQu","fid":"YW0gb3IgcG1fMTU=","name":"am or pm","semanticType":"nominal","analyticType":"dimension"},{"dragId":"gw_PqvI","fid":"RGF5IG9mIHRoZSB3ZWVrXzE2","name":"Day of the week","semanticType":"ordinal","analyticType":"dimension"}],"measures":[{"dragId":"gw_7JNg","fid":"aW5kZXhfMA==","name":"index","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_IYM_","fid":"aG91cl80","name":"hour","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_ofd8","fid":"dGVtcGVyYXR1cmVfNw==","name":"temperature","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_sGlX","fid":"ZmVlbGluZ190ZW1wXzg=","name":"feeling_temp","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_674M","fid":"aHVtaWRpdHlfOQ==","name":"humidity","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_AxQD","fid":"d2luc3BlZWRfMTA=","name":"winspeed","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_iy94","fid":"Y2FzdWFsXzEx","name":"casual","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_9J2u","fid":"cmVnaXN0ZXJlZF8xMg==","name":"registered","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_WzEF","fid":"Y291bnRfMTM=","name":"count","analyticType":"measure","semanticType":"quantitative","aggName":"sum"},{"dragId":"gw_count_fid","fid":"gw_count_fid","name":"Row count","analyticType":"measure","semanticType":"quantitative","aggName":"sum","computed":true,"expression":{"op":"one","params":[],"as":"gw_count_fid"}}],"rows":[{"dragId":"gw_gJqj","fid":"cmVnaXN0ZXJlZF8xMg==","name":"registered","analyticType":"measure","semanticType":"quantitative","aggName":"sum"}],"columns":[{"dragId":"gw_uZ9C","fid":"RGF5IG9mIHRoZSB3ZWVrXzE2","name":"Day of the week","semanticType":"ordinal","analyticType":"dimension"}],"color":[{"dragId":"gw_04s5","fid":"c2Vhc29uXzM=","name":"season","semanticType":"nominal","analyticType":"dimension"}],"opacity":[],"size":[],"shape":[],"radius":[],"theta":[],"details":[],"filters":[],"text":[]},"config":{"defaultAggregated":true,"geoms":["auto"],"stack":"stack","showActions":false,"interactiveScale":false,"sorted":"none","zeroScale":true,"size":{"mode":"auto","width":320,"height":200},"format":{}}}]"""
  
+# Generate the HTML using Pygwalker
+pyg_html = pyg.to_html(df, spec=vis_spec)
  
-renderer = get_pyg_renderer()
- 
-st.subheader("Display Explore UI")
- 
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["graphic walker", "data profiling", "graphic renderer", "pure chart"]
-)
- 
-with tab1:
-    renderer.explorer()
- 
-with tab2:
-    renderer.explorer(default_tab="data")
- 
-with tab3:
-    renderer.render_filter_renderer()
- 
-with tab4:
-    st.markdown("### registered per weekday")
-    renderer.chart(0)
-    st.markdown("### registered per day")
-    renderer.chart(1)
+# Embed the HTML into the Streamlit app
+components.html(pyg_html, height=1000, scrolling=True)
