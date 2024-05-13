@@ -92,7 +92,7 @@ lottie_chill = load_lottieurl("https://lottie.host/2acdde4d-32d7-44a8-aa64-03e1a
 # Button to refresh the data - align to upper right
 col1, col2 = st.columns([3, .350])
 with col2:
-    if st.button('Refresh Data'):
+    if st.button(':red[Refresh Data]'):
         # st.experimental_memo.clear()
         st.cache_data.clear()
         # st.experimental_rerun()
@@ -212,7 +212,7 @@ if in_queue_count == 0:
     with col2:
         # Display Lottie animation if count is 0
         st_lottie(lottie_clap, speed=1, height=100, width=200)  # Adjust height as needed
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(df_inqueue, use_container_width=True)
 else:
     col1, col2 = st.columns([0.3, 1.2])  # Adjust the ratio as needed for your layout
@@ -221,7 +221,7 @@ else:
     with col2:
         # Display Lottie animation if count is not 0
         st_lottie(lottie_queuing, speed=1, height=100, width=200)  # Adjust height as needed
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(df_inqueue, use_container_width=True)
 
 
@@ -234,7 +234,7 @@ if in_progress_count == 0:
     with col2:
         # Display Lottie animation if count is 0
         st_lottie(lottie_chill, speed=1, height=100, width=200)  # Adjust height as needed
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(df_inprogress, use_container_width=True)
 else:
     col1, col2 = st.columns([0.4, 1.2])  # Adjust the ratio as needed for your layout
@@ -243,7 +243,7 @@ else:
     with col2:
         # Display Lottie animation if count is not 0
         st_lottie(lottie_inprogress, speed=1, height=100, width=200)  # Adjust height as needed
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(df_inprogress, use_container_width=True)
 
 filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Timestamp',
@@ -255,7 +255,7 @@ filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Times
 
 # Display the filtered dataframe
 st.title('Data')
-with st.expander('Show Data', expanded=False):
+with st.expander(':blue[Show Data]', expanded=False):
     st.dataframe(df_filtered[filtered_columns], use_container_width=True)
 
 "---"
@@ -269,7 +269,7 @@ with col1:
     agg_hour_service['Total'] = agg_hour_service.iloc[:, 1:].sum(axis=1)
 
     fig = px.bar(agg_hour_service, x='Hour_Created', y=agg_hour_service.columns[1:-1], title='Hourly Interactions by Service',
-                labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation'}, 
+                labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation', 'variable': 'Service'}, 
                 category_orders={'Service': agg_hour_service.columns[1:-1]})
     fig.update_layout(barmode='stack')
 
@@ -286,10 +286,10 @@ with col1:
     csv = agg_hour_service.to_csv(index=False).encode('utf-8')
 
     # Show the data in a collapsible table
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(agg_hour_service, use_container_width=True)
         # Download button
-        st.download_button('Download Data', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', 
+        st.download_button(':green[Download Data]', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', 
                         help="Click to download the Hourly Interactions by Service in CSV format")
 
 
@@ -311,10 +311,10 @@ with col2:
     csv = agg_hour_on_it.to_csv(index=False).encode('utf-8')
 
     # Show the data in a collapsible table
-    with st.expander("Show Data", expanded=False):
+    with st.expander(":blue[Show Data]", expanded=False):
         st.dataframe(agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
         # Download button
-        st.download_button('Download Data', csv, file_name='average_time_to_on_it.csv', mime='text/csv', help="Click to download the Average Time to On It by Hour in CSV format")
+        st.download_button(':green[Download Data]', csv, file_name='average_time_to_on_it.csv', mime='text/csv', help="Click to download the Average Time to On It by Hour in CSV format")
 
 col1, col2 = st.columns(2)
 
@@ -517,7 +517,7 @@ csv = pivot_df.to_csv(index=False)
 csv = pivot_df.to_csv(index=False).encode('utf-8') 
 
 # Create an download button using st.download_button to download the pivot_df to CSV
-st.download_button('Download Data', csv, file_name='interaction_count_by_requestor.csv', mime='text/csv',help="Download Interaction Count by Requestor Data in CSV format")
+st.download_button(':green[Download Data]', csv, file_name='interaction_count_by_requestor.csv', mime='text/csv',help="Download Interaction Count by Requestor Data in CSV format")
 
 st.divider()
 
