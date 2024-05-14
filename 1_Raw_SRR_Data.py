@@ -437,6 +437,17 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
 with col5:
     st.write(chart2)
 
+    # Convert agg_service['TimeTo_On_It_Minutes'] and agg_service['TimeTo_Attended_Minutes'] to "h:mm:ss"
+    agg_service['TimeTo_On_It_HH:MM:SS'] = agg_service['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
+    agg_service['TimeTo_Attended_HH:MM:SS'] = agg_service['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
+
+    # Show the data in a collapsible table with download button
+    with st.expander(':blue[Show Data]', expanded=False):
+        st.dataframe(agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
+        csv = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        # Download button
+        st.download_button(':green[Download Data]', csv, file_name='group_response_times.csv', mime='text/csv', help="Click to download the Group Response Times in CSV format")
+
 # # Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
 # chart3 = alt.Chart(df).mark_bar().encode(
 #     x='Service',
