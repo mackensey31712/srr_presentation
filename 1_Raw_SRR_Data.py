@@ -104,84 +104,6 @@ st.write(':wave: Welcome:exclamation:')
 # Insert Five9 logo
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
-
-# st.sidebar.image(five9logo_url, width=200)
-
-# # Sidebar Title
-# st.sidebar.markdown('# Select a **Filter:**')
-
-
-# with st.sidebar:
-#     all_services_options = ['All'] + list(df['Service'].unique())
-#     selected_service = st.multiselect('Service - (Multi-Select)', all_services_options, default='All')
-
-# # Apply filtering
-# if 'All' in selected_service:
-#     df_filtered = df
-
-# elif not selected_service:
-#     # If nothing is selected, display a message indicating all services are being displayed
-#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All Services</h1>", unsafe_allow_html=True)
-#     df_filtered = df
-# else:
-#     df_filtered = df[df['Service'].isin(selected_service)]
-    
-
-# # Create a date_input widget for 'Date Created' column filtering.
-# start_date = st.sidebar.date_input('Start Date', value=df_filtered['Date Created'].min(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
-# end_date = st.sidebar.date_input('End Date', value=df_filtered['Date Created'].max(), min_value=df_filtered['Date Created'].min(), max_value=df_filtered['Date Created'].max())
-
-# # Convert start_date and end_date to datetime objects
-# start_date = pd.to_datetime(start_date)
-# end_date = pd.to_datetime(end_date)
-
-# # Apply filtering
-# df_filtered = df_filtered[(df_filtered['Date Created'] >= start_date) & (df_filtered['Date Created'] <= end_date)]
-
-# # Sidebar with a dropdown for 'Weekend?' column filtering
-# with st.sidebar:
-#     selected_weekend = st.selectbox('Weekend?', ['All', 'Yes', 'No'])
-
-# # Apply filtering
-# if selected_weekend != 'All':
-#     df_filtered = df_filtered[df_filtered['Weekend?'] == selected_weekend]
-# else:
-#     df_filtered = df_filtered
-
-# # Sidebar with a dropdown for 'Working Hours?' column filtering
-# with st.sidebar:
-#     selected_working_hours = st.selectbox('Working Hours?', ['All', 'Yes', 'No'])
-
-# # Apply filtering
-# if selected_working_hours != 'All':
-#     df_filtered = df_filtered[df_filtered['Working Hours?'] == selected_working_hours]
-# else:
-#     df_filtered = df_filtered
-
-# # Sidebar with a multi-select dropdown for 'SME (On It)' column filtering
-# with st.sidebar:
-#     all_sme_options = ['All'] + list(df_filtered['SME (On It)'].unique())
-#     selected_sme_on_it = st.multiselect('SME (On It) - (Multi-Select)', all_sme_options, default='All')
-
-
-# # Check the selection conditions
-# if 'All' in selected_sme_on_it:
-#     # If 'All' is selected, display the whole filtered dataframe without a message
-#     st.sidebar.markdown("---")
-# elif not selected_sme_on_it:
-#     # If nothing is selected, display a message indicating all SMEs are being displayed
-#     st.sidebar.markdown("<h3 style='color: red;'>Displaying All SMEs</h1>", unsafe_allow_html=True)
-    
-# else:
-#     # If specific SMEs are selected, filter the dataframe and display the result
-#     df_filtered = df_filtered[df_filtered['SME (On It)'].isin(selected_sme_on_it)]
-#     st.sidebar.markdown(
-#         "<h3 style='color: red;'>Displaying Selected SMEs</h1>",
-#         unsafe_allow_html=True)
-#     df_filtered = df_filtered
-
-
-
 # DataFrames for "In Queue" and "In Progress"
 df_inqueue = df[df['Status'] == 'In Queue']
 df_inqueue = df_inqueue[['Case #', 'Requestor','Service','Creation Timestamp', 'Message Link']]
@@ -462,13 +384,26 @@ chart = alt.Chart(agg_month_long).mark_bar().encode(
     tooltip=['Month', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
 ).properties(
     title='Monthly Response Times',
-    width=600,
-    height=400
+    width=800,
+    height=600
 )
 
 # Display the 'Monthly Response Times' chart
 with col1:
     st.write(chart)
+
+    # Show the data in a collapsible table with download button
+    with st.expander(':blue[Show Data]', expanded=False):
+        # Filter DataFrame to include only the months present in month_order
+        agg_month_filtered = agg_month[agg_month['Month'].isin(month_order)]
+        # Ensure consistency in month names
+        agg_month_filtered['Month'] = pd.Categorical(agg_month_filtered['Month'], categories=month_order, ordered=True)
+        # Sort the filtered DataFrame according to the month_order
+        agg_month_sorted = agg_month_filtered.sort_values('Month').reset_index(drop=True)
+        st.dataframe(agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
+        csv = agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        # Download button
+        st.download_button(':green[Download Data]', csv, file_name='monthly_response_times.csv', mime='text/csv', help="Click to download the Monthly Response Times in CSV format")
 
 # Convert seconds to minutes directly for 'agg_service'
 agg_service['TimeTo_On_It_Minutes'] = agg_service['TimeTo: On It Sec'] / 60
@@ -488,24 +423,39 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
     tooltip=['Service', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
 ).properties(
     title='Group Response Times',
-    width=600,
-    height=400
+    width=800,
+    height=600
 )
 
 # Display 'Group Response Times'
 with col5:
     st.write(chart2)
 
-# Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
-chart3 = alt.Chart(df).mark_bar().encode(
-    x='Service',
-    y='count()',
-    tooltip=['Service', 'count()']
-).properties(
-    title='Interaction Count',
-    width=600,
-    height=600
-)
+# # Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
+# chart3 = alt.Chart(df).mark_bar().encode(
+#     x='Service',
+#     y='count()',
+#     tooltip=['Service', 'count()']
+# ).properties(
+#     title='Interaction Count',
+#     width=600,
+#     height=600
+# )
+
+# Get the unique "Service" values and their counts
+service_counts = df['Service'].value_counts().reset_index()
+service_counts.columns = ['Service', 'Count']
+
+# Create the plotly bar chart
+chart3 = px.bar(service_counts, x='Service', y='Count', color='Service', text='Count', title='Interaction Count')
+
+# Add data labels outside the bars
+chart3.update_traces(textposition='outside')
+chart3.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', xaxis_tickangle=-0)
+
+# Adjust chart size
+chart3.update_layout(width=800, height=600)
+
 
 # Display 'Interaction Count' chart
 with col1:

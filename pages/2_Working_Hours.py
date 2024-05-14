@@ -400,7 +400,7 @@ chart = alt.Chart(agg_month_long).mark_bar().encode(
 ).properties(
     title='Monthly Response Times',
     width=800,
-    height=400
+    height=600
 )
 
 # Convert agg_month['TimeTo: On It Minutes'] and agg_month['TimeTo: Attended Minutes'] to h:mm:ss
@@ -445,7 +445,7 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
 ).properties(
     title='Group Response Times',
     width=800,
-    height=400
+    height=600
 )
 
 # Display 'Group Response Times'

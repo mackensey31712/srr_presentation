@@ -422,7 +422,7 @@ chart = alt.Chart(agg_month_long).mark_bar().encode(
 ).properties(
     title='Monthly Response Times',
     width=800,
-    height=400
+    height=600
 )
 
 
@@ -468,7 +468,7 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
 ).properties(
     title='Group Response Times',
     width=800,
-    height=400
+    height=600
 )
 
 # Display 'Group Response Times'
