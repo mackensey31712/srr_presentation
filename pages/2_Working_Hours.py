@@ -399,13 +399,32 @@ chart = alt.Chart(agg_month_long).mark_bar().encode(
     tooltip=['Month', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
 ).properties(
     title='Monthly Response Times',
-    width=600,
+    width=800,
     height=400
 )
+
+# Convert agg_month['TimeTo: On It Minutes'] and agg_month['TimeTo: Attended Minutes'] to h:mm:ss
+agg_month['TimeTo_On_It_HH:MM:SS'] = agg_month['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
+agg_month['TimeTo_Attended_HH:MM:SS'] = agg_month['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
+
+csv = agg_month.to_csv(index=False).encode('utf-8')
 
 # Display the 'Monthly Response Times' chart
 with col1:
     st.write(chart)
+
+    # Show the data in a collapsible table with download button
+    with st.expander(':blue[Show Data]', expanded=False):
+        # Filter DataFrame to include only the months present in month_order
+        agg_month_filtered = agg_month[agg_month['Month'].isin(month_order)]
+        # Ensure consistency in month names
+        agg_month_filtered['Month'] = pd.Categorical(agg_month_filtered['Month'], categories=month_order, ordered=True)
+        # Sort the filtered DataFrame according to the month_order
+        agg_month_sorted = agg_month_filtered.sort_values('Month').reset_index(drop=True)
+        st.dataframe(agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
+        csv = agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        # Download button
+        st.download_button(':green[Download Data]', csv, file_name='monthly_response_times.csv', mime='text/csv', help="Click to download the Monthly Response Times in CSV format")
 
 # Convert seconds to minutes directly for 'agg_service'
 agg_service['TimeTo_On_It_Minutes'] = agg_service['TimeTo: On It Sec'] / 60
@@ -425,7 +444,7 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
     tooltip=['Service', 'Category', 'Minutes']  # Optional: add tooltip for interactivity
 ).properties(
     title='Group Response Times',
-    width=600,
+    width=800,
     height=400
 )
 
@@ -433,16 +452,41 @@ chart2 = alt.Chart(agg_service_long).mark_bar().encode(
 with col5:
     st.write(chart2)
 
-# Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
-chart3 = alt.Chart(df_filtered).mark_bar().encode(
-    x='Service',
-    y='count()',
-    tooltip=['Service', 'count()']
-).properties(
-    title='Interaction Count',
-    width=600,
-    height=600
-)
+    # Convert agg_service['TimeTo_On_It_Minutes'] and agg_service['TimeTo_Attended_Minutes'] to "h:mm:ss"
+    agg_service['TimeTo_On_It_HH:MM:SS'] = agg_service['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
+    agg_service['TimeTo_Attended_HH:MM:SS'] = agg_service['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
+
+    # Show the data in a collapsible table with download button
+    with st.expander(':blue[Show Data]', expanded=False):
+        st.dataframe(agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
+        csv = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        # Download button
+        st.download_button(':green[Download Data]', csv, file_name='group_response_times.csv', mime='text/csv', help="Click to download the Group Response Times in CSV format")
+
+# # Create an interactive bar chart to show the 'unique case count' for each unique 'Service'
+# chart3 = alt.Chart(df_filtered).mark_bar().encode(
+#     x='Service',
+#     y='count()',
+#     tooltip=['Service', 'count()']
+# ).properties(
+#     title='Interaction Count',
+#     width=600,
+#     height=600
+# )
+
+# Get the unique "Service" values and their counts
+service_counts = df_filtered['Service'].value_counts().reset_index()
+service_counts.columns = ['Service', 'Count']
+
+# Create the plotly bar chart
+chart3 = px.bar(service_counts, x='Service', y='Count', color='Service', text='Count', title='Interaction Count')
+
+# Add data labels outside the bars
+chart3.update_traces(textposition='outside')
+chart3.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', xaxis_tickangle=-0)
+
+# Adjust chart size
+chart3.update_layout(width=800, height=600)
 
 # Display 'Interaction Count' chart
 with col1:
