@@ -524,7 +524,7 @@ chart4 = alt.Chart(df_filtered).mark_bar().encode(
     tooltip=['SME (On It)', 'count()']
 ).properties(
     title='Interactions Handled',
-    width=600,
+    width=700,
     height=600
 )
 

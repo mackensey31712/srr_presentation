@@ -388,6 +388,12 @@ chart = alt.Chart(agg_month_long).mark_bar().encode(
     height=600
 )
 
+# Convert agg_month['TimeTo: On It Minutes'] and agg_month['TimeTo: Attended Minutes'] to h:mm:ss
+agg_month['TimeTo_On_It_HH:MM:SS'] = agg_month['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
+agg_month['TimeTo_Attended_HH:MM:SS'] = agg_month['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
+
+csv = agg_month.to_csv(index=False).encode('utf-8')
+
 # Display the 'Monthly Response Times' chart
 with col1:
     st.write(chart)
@@ -468,7 +474,7 @@ chart4 = alt.Chart(df).mark_bar().encode(
     tooltip=['SME (On It)', 'count()']
 ).properties(
     title='Interactions Handled',
-    width=600,
+    width=700,
     height=600
 )
 
