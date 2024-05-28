@@ -597,7 +597,8 @@ chart_attended = alt.Chart(df_sorted).mark_bar().encode(
 st.altair_chart(chart_on_it, use_container_width=True)
 st.altair_chart(chart_attended, use_container_width=True)
 
-# Auto-update every 5 minutes
-refresh_rate = 120  # 300 seconds = 5 minutes
-time.sleep(refresh_rate)
-st.rerun()
+# Auto-update every 2 minutes
+refresh_rate = 120
+while True:
+    time.sleep(refresh_rate)
+    st.rerun()
