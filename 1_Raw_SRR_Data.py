@@ -601,4 +601,5 @@ st.altair_chart(chart_attended, use_container_width=True)
 refresh_rate = 120
 while True:
     time.sleep(refresh_rate)
+    st.cache_data.clear()
     st.rerun()
