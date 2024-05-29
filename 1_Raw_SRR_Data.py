@@ -196,9 +196,9 @@ with col2:
 with col3:
     st.metric(label="Answered Surveys", value=survey_count)
 with col4:
-    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms, delta=delta_on_it_hms)
+    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms, delta=delta_on_it_hms, delta_color="inverse" )
 with col5:
-    st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms, delta=delta_attended_hms)
+    st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms, delta=delta_attended_hms, delta_color="inverse")
 
 # Preprocess the DataFrame to remove commas from the "Case #" column
 df_inqueue['Case #'] = df_inqueue['Case #'].astype(str).str.replace(',', '')
