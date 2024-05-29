@@ -40,11 +40,20 @@ def convert_to_seconds(time_str):
     except ValueError:
         return 0
 
+# def seconds_to_hms(seconds):
+#     hours = seconds // 3600
+#     minutes = (seconds % 3600) // 60
+#     seconds = seconds % 60
+#     return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+
+# Convert seconds to h:mmm:ss while also accounting for negative values
 def seconds_to_hms(seconds):
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
-    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+    sign = "-" if seconds < 0 else ""
+    seconds = abs(seconds)
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{sign}{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 def minutes_to_hms(minutes):
     hours = int(minutes // 60)
@@ -150,9 +159,9 @@ with cols4:
 # Calculate deltas
 if delta_option == 'Previous week':
     today = datetime.now()
-    start_of_week = today - timedelta(days=today.weekday() + 7)
-    end_of_week = start_of_week + timedelta(days=6)
-    df_previous_week = df[(df['Date Created'] >= start_of_week) & (df['Date Created'] <= end_of_week)]
+    first_day_of_current_month = datetime(today.year, today.month, 1)
+    end_of_last_week = today - timedelta(days=today.weekday() + 1)
+    df_previous_week = df_filtered[(df['Date Created'] >= first_day_of_current_month) & (df_filtered['Date Created'] <= end_of_last_week)]
 
     df_previous_week['TimeTo: On It'] = pd.to_timedelta(df_previous_week['TimeTo: On It'], errors='coerce')
     df_previous_week['TimeTo: Attended'] = pd.to_timedelta(df_previous_week['TimeTo: Attended'], errors='coerce')
@@ -162,7 +171,6 @@ if delta_option == 'Previous week':
 
     delta_on_it = overall_avg_on_it_sec - prev_week_avg_on_it_sec if not np.isnan(prev_week_avg_on_it_sec) else 0
     delta_attended = overall_avg_attended_sec - prev_week_avg_attended_sec if not np.isnan(prev_week_avg_attended_sec) else 0
-
 else:
     prev_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%B')
     df_previous_month = df[df['Month'] == prev_month]
