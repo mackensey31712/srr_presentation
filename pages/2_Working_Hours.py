@@ -10,7 +10,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from st_aggrid.shared import JsCode
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
-
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_sunrise:", layout="wide")
 
@@ -106,55 +106,47 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-cols1, cols2, cols3 = st.columns(3)
+cols1, cols2, cols3, cols4 = st.columns(4)
 
 with cols1:
-# Display Lottie animation
     st_lottie(lottie_people, speed=1, reverse=False, loop=True, quality="low", height=200, width=200, key=None)
 
 with cols2:
-    if st.selectbox:
-        selected_service = st.selectbox('Service', ['All'] + list(df['Service'].unique()))
+    selected_service = st.selectbox('Service', ['All'] + list(df['Service'].unique()))
 
-    # Apply filtering
     if selected_service != 'All':
         df_filtered = df[df['Service'] == selected_service]
     else:
         df_filtered = df
 
 with cols3:
-    if st.selectbox:
-        selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()))
+    current_month = datetime.now().strftime('%B')
+    selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()), index=(df_filtered['Month'].unique().tolist().index(current_month) + 1) if current_month in df_filtered['Month'].unique() else 0)
 
-    # Apply filtering
     if selected_month != 'All':
         df_filtered = df_filtered[df_filtered['Month'] == selected_month]
     else:
-        df_filtered = df_filtered
+        df_filtered = df
 
 st.write(':wave: Welcome:exclamation:')
-# st.title('Five9 SRR Management View')
-
 
 # Insert Five9 logo
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
 # DataFrames for "In Queue" and "In Progress"
 df_inqueue = df_filtered[df_filtered['Status'] == 'In Queue']
-df_inqueue = df_inqueue[['Case #', 'Requestor','Service','Creation Timestamp', 'Message Link']]
+df_inqueue = df_inqueue[['Case #', 'Requestor', 'Service', 'Creation Timestamp', 'Message Link']]
 df_inprogress = df_filtered[df_filtered['Status'] == 'In Progress']
-df_inprogress = df_inprogress[['Case #', 'Requestor','Service','Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
-
+df_inprogress = df_inprogress[['Case #', 'Requestor', 'Service', 'Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
 
 # Metrics
 df_filtered['TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
 df_filtered['TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
 
-# Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format
-df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'])
-df_filtered['TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'])
+# Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format and handle non-timedelta values
+df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'], errors='coerce')
+df_filtered['TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'], errors='coerce')
 
-# Calculate the average seconds directly from 'TimeTo: On It' and 'TimeTo: Attended', and convert to 'hh:mm:ss'
 overall_avg_on_it_sec = df_filtered['TimeTo: On It'].dt.total_seconds().mean()
 overall_avg_attended_sec = df_filtered['TimeTo: Attended'].dt.total_seconds().mean()
 unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
@@ -162,6 +154,41 @@ unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
 overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
 overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
 
+with cols4:
+# Radio buttons for delta selection
+    delta_option = st.radio("Select delta calculation:", ('Previous week', 'Previous month'))
+
+# Calculate deltas
+if delta_option == 'Previous week':
+    today = datetime.now()
+    start_of_week = today - timedelta(days=today.weekday() + 7)
+    end_of_week = start_of_week + timedelta(days=6)
+    df_previous_week = df[(df['Date Created'] >= start_of_week) & (df['Date Created'] <= end_of_week)]
+
+    df_previous_week['TimeTo: On It'] = pd.to_timedelta(df_previous_week['TimeTo: On It'], errors='coerce')
+    df_previous_week['TimeTo: Attended'] = pd.to_timedelta(df_previous_week['TimeTo: Attended'], errors='coerce')
+
+    prev_week_avg_on_it_sec = df_previous_week['TimeTo: On It'].dt.total_seconds().mean()
+    prev_week_avg_attended_sec = df_previous_week['TimeTo: Attended'].dt.total_seconds().mean()
+
+    delta_on_it = overall_avg_on_it_sec - prev_week_avg_on_it_sec if not np.isnan(prev_week_avg_on_it_sec) else 0
+    delta_attended = overall_avg_attended_sec - prev_week_avg_attended_sec if not np.isnan(prev_week_avg_attended_sec) else 0
+
+else:
+    prev_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%B')
+    df_previous_month = df[df['Month'] == prev_month]
+
+    df_previous_month['TimeTo: On It'] = pd.to_timedelta(df_previous_month['TimeTo: On It'], errors='coerce')
+    df_previous_month['TimeTo: Attended'] = pd.to_timedelta(df_previous_month['TimeTo: Attended'], errors='coerce')
+
+    prev_month_avg_on_it_sec = df_previous_month['TimeTo: On It'].dt.total_seconds().mean()
+    prev_month_avg_attended_sec = df_previous_month['TimeTo: Attended'].dt.total_seconds().mean()
+
+    delta_on_it = overall_avg_on_it_sec - prev_month_avg_on_it_sec if not np.isnan(prev_month_avg_on_it_sec) else 0
+    delta_attended = overall_avg_attended_sec - prev_month_avg_attended_sec if not np.isnan(prev_month_avg_attended_sec) else 0
+
+delta_on_it_hms = seconds_to_hms(delta_on_it)
+delta_attended_hms = seconds_to_hms(delta_attended)
 
 # Display metrics
 col1, col2, col3, col4, col5 = st.columns(5)
@@ -172,9 +199,9 @@ with col2:
 with col3:
     st.metric(label="Answered Surveys", value=survey_count)
 with col4:
-    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms)
+    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms, delta=delta_on_it_hms)
 with col5:
-    st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms)
+    st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms, delta=delta_attended_hms)
 
 # Preprocess the DataFrame to remove commas from the "Case #" column
 df_inqueue['Case #'] = df_inqueue['Case #'].astype(str).str.replace(',', '')
