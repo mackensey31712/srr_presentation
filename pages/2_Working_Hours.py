@@ -137,22 +137,26 @@ with cols3:
     else:
         df_filtered = df
 
+with cols4:
+    default_start_date = datetime.today().replace(day=1) - timedelta(days=1)
+    default_start_date = default_start_date.replace(day=1)
+    default_end_date = datetime.today().replace(day=1) - timedelta(days=1)
+
+    date_range = st.date_input("Select Delta Range", value=(default_start_date, default_end_date))
+    start_date, end_date = date_range[0], date_range[1]
+
 st.write(':wave: Welcome:exclamation:')
 
-# Insert Five9 logo
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
-# DataFrames for "In Queue" and "In Progress"
 df_inqueue = df_filtered[df_filtered['Status'] == 'In Queue']
 df_inqueue = df_inqueue[['Case #', 'Requestor', 'Service', 'Creation Timestamp', 'Message Link']]
 df_inprogress = df_filtered[df_filtered['Status'] == 'In Progress']
 df_inprogress = df_inprogress[['Case #', 'Requestor', 'Service', 'Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
 
-# Metrics
 df_filtered['TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
 df_filtered['TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
 
-# Ensure 'TimeTo: On It' and 'TimeTo: Attended' are in timedelta format and handle non-timedelta values
 df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'], errors='coerce')
 df_filtered['TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'], errors='coerce')
 
@@ -163,38 +167,16 @@ unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
 overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
 overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
 
-with cols4:
-# Radio buttons for delta selection
-    delta_option = st.radio("Select delta calculation:", ('Previous week', 'Previous month'))
+df_custom_range = df[(df['Date Created'] >= pd.to_datetime(start_date)) & (df['Date Created'] <= pd.to_datetime(end_date))]
 
-# Calculate deltas
-if delta_option == 'Previous week':
-    today = datetime.now()
-    first_day_of_current_month = datetime(today.year, today.month, 1)
-    end_of_last_week = today - timedelta(days=today.weekday() + 1)
-    df_previous_week = df_filtered[(df['Date Created'] >= first_day_of_current_month) & (df_filtered['Date Created'] <= end_of_last_week)]
+df_custom_range['TimeTo: On It'] = pd.to_timedelta(df_custom_range['TimeTo: On It'], errors='coerce')
+df_custom_range['TimeTo: Attended'] = pd.to_timedelta(df_custom_range['TimeTo: Attended'], errors='coerce')
 
-    df_previous_week['TimeTo: On It'] = pd.to_timedelta(df_previous_week['TimeTo: On It'], errors='coerce')
-    df_previous_week['TimeTo: Attended'] = pd.to_timedelta(df_previous_week['TimeTo: Attended'], errors='coerce')
+custom_range_avg_on_it_sec = df_custom_range['TimeTo: On It'].dt.total_seconds().mean()
+custom_range_avg_attended_sec = df_custom_range['TimeTo: Attended'].dt.total_seconds().mean()
 
-    prev_week_avg_on_it_sec = df_previous_week['TimeTo: On It'].dt.total_seconds().mean()
-    prev_week_avg_attended_sec = df_previous_week['TimeTo: Attended'].dt.total_seconds().mean()
-
-    delta_on_it = overall_avg_on_it_sec - prev_week_avg_on_it_sec if not np.isnan(prev_week_avg_on_it_sec) else 0
-    delta_attended = overall_avg_attended_sec - prev_week_avg_attended_sec if not np.isnan(prev_week_avg_attended_sec) else 0
-
-else:
-    prev_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%B')
-    df_previous_month = df[df['Month'] == prev_month]
-
-    df_previous_month['TimeTo: On It'] = pd.to_timedelta(df_previous_month['TimeTo: On It'], errors='coerce')
-    df_previous_month['TimeTo: Attended'] = pd.to_timedelta(df_previous_month['TimeTo: Attended'], errors='coerce')
-
-    prev_month_avg_on_it_sec = df_previous_month['TimeTo: On It'].dt.total_seconds().mean()
-    prev_month_avg_attended_sec = df_previous_month['TimeTo: Attended'].dt.total_seconds().mean()
-
-    delta_on_it = overall_avg_on_it_sec - prev_month_avg_on_it_sec if not np.isnan(prev_month_avg_on_it_sec) else 0
-    delta_attended = overall_avg_attended_sec - prev_month_avg_attended_sec if not np.isnan(prev_month_avg_attended_sec) else 0
+delta_on_it = overall_avg_on_it_sec - custom_range_avg_on_it_sec if not np.isnan(custom_range_avg_on_it_sec) else 0
+delta_attended = overall_avg_attended_sec - custom_range_avg_attended_sec if not np.isnan(custom_range_avg_attended_sec) else 0
 
 delta_on_it_hms = seconds_to_hms(delta_on_it)
 delta_attended_hms = seconds_to_hms(delta_attended)
@@ -645,8 +627,29 @@ st.altair_chart(chart_on_it, use_container_width=True)
 st.altair_chart(chart_attended, use_container_width=True)
 
 # Auto-update every 2 minutes
+# refresh_rate = 120
+# while True:
+#     time.sleep(refresh_rate)
+#     st.cache_data.clear()
+#     st.rerun()
+
 refresh_rate = 120
-while True:
-    time.sleep(refresh_rate)
+
+def countdown_timer(duration):
+    countdown_seconds = duration
+
+    sidebar_text = st.sidebar.text("Time to refresh: 02:00")
+
+    while countdown_seconds:
+        mins, secs = divmod(countdown_seconds, 60)
+        timer_text = f"Time to refresh: {mins:02d}:{secs:02d}"
+        sidebar_text.text(timer_text)
+        time.sleep(1)
+        countdown_seconds -= 1
+
+    sidebar_text.text("Refreshing...")
     st.cache_data.clear()
     st.rerun()
+
+while True:
+    countdown_timer(refresh_rate)
