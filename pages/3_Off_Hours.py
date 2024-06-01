@@ -662,16 +662,22 @@ refresh_rate = 120
 def countdown_timer(duration):
     countdown_seconds = duration
 
-    sidebar_text = st.sidebar.text("Time to refresh: 02:00")
+    # Use HTML to set the initial timer text with red color
+    sidebar_html = st.sidebar.empty()
+    sidebar_html.markdown("<p style='color:red;'>Time to refresh: 02:00</p>", unsafe_allow_html=True)
 
     while countdown_seconds:
         mins, secs = divmod(countdown_seconds, 60)
         timer_text = f"Time to refresh: {mins:02d}:{secs:02d}"
-        sidebar_text.text(timer_text)
+        
+        # Update the timer text with red color
+        sidebar_html.markdown(f"<p style='color:red;'>{timer_text}</p>", unsafe_allow_html=True)
+        
         time.sleep(1)
         countdown_seconds -= 1
 
-    sidebar_text.text("Refreshing...")
+    # Update the text to indicate refreshing with red color
+    sidebar_html.markdown("<p style='color:red;'>Refreshing...</p>", unsafe_allow_html=True)
     st.cache_data.clear()
     st.rerun()
 
