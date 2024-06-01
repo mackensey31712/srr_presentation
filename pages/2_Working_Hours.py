@@ -11,9 +11,12 @@ from st_aggrid.shared import JsCode
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
+import pytz
 
 st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_sunrise:", layout="wide")
 
+# Set timezone to America/Los_Angeles
+timezone = pytz.timezone('America/Los_Angeles')
 
 # @st.cache_data(ttl=120, show_spinner=True)
 # def load_data(url):
@@ -28,7 +31,7 @@ st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_s
 @st.cache_data(ttl=120, show_spinner=True)
 def load_data(data):
     df = data.copy()  # Make a copy to avoid modifying the original DataFrame
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce').dt.tz_localize(timezone)   
     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
     df = df.loc[df['Working Hours?'] == 'Yes'] # Filter Dataframe to only include rows with 'Yes' in the 'Working Hours?' column  
     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
@@ -129,7 +132,7 @@ with cols2:
         df_filtered = df
 
 with cols3:
-    current_month = datetime.now().strftime('%B')
+    current_month = datetime.now(timezone).strftime('%B')
     selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()), index=(df_filtered['Month'].unique().tolist().index(current_month) + 1) if current_month in df_filtered['Month'].unique() else 0)
 
     if selected_month != 'All':
@@ -138,12 +141,20 @@ with cols3:
         df_filtered = df
 
 with cols4:
-    default_start_date = datetime.today().replace(day=1) - timedelta(days=1)
-    default_start_date = default_start_date.replace(day=1)
-    default_end_date = datetime.today().replace(day=1) - timedelta(days=1)
+    default_start_date = (datetime.now(timezone).replace(day=1) - timedelta(days=1)).replace(day=1)
+    default_end_date = datetime.now(timezone).replace(day=1) - timedelta(days=1)
 
     date_range = st.date_input("Select Delta Range", value=(default_start_date, default_end_date))
     start_date, end_date = date_range[0], date_range[1]
+
+    # Ensure the selected dates are in the America/Los_Angeles timezone
+    start_date = timezone.localize(datetime.combine(start_date, datetime.min.time()))
+    end_date = timezone.localize(datetime.combine(end_date, datetime.max.time()))
+
+la_timezone = pytz.timezone('America/Los_Angeles')
+
+# Get the current time in Los Angeles timezone
+la_now = datetime.now(la_timezone)
 
 st.write(':wave: Welcome:exclamation:')
 
@@ -632,6 +643,9 @@ st.altair_chart(chart_attended, use_container_width=True)
 #     time.sleep(refresh_rate)
 #     st.cache_data.clear()
 #     st.rerun()
+
+# Display the time in Streamlit
+st.sidebar.write("Last Updated: ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
 
 refresh_rate = 120
 
