@@ -655,7 +655,8 @@ st.altair_chart(chart_attended, use_container_width=True)
 #     st.rerun()
 
 # Display the time in Streamlit
-st.sidebar.write("Last Updated: ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
+# st.sidebar.write("Last Updated: ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
+st.sidebar.markdown(f"**Last Updated:** {la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z')}")
 
 refresh_rate = 120
 
