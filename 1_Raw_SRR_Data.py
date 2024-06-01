@@ -15,10 +15,13 @@ import pytz
 
 st.set_page_config(page_title="Raw SRR Data", page_icon=":mag_right:", layout="wide")
 
+# Set timezone to America/Los_Angeles
+timezone = pytz.timezone('America/Los_Angeles')
+
 @st.cache_data(ttl=120, show_spinner=True)
 def load_data(data):
     df = data.copy()  # Make a copy to avoid modifying the original DataFrame
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce').dt.tz_localize(timezone)   
     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
     # df = df.loc[df['Working Hours?'] == 'Yes'] # Filter Dataframe to only include rows with 'Yes' in the 'Working Hours?' column  
     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
@@ -130,7 +133,12 @@ with cols4:
     date_range = st.date_input("Select Delta Range", value=(default_start_date, default_end_date))
     start_date, end_date = date_range[0], date_range[1]
 
+    # Ensure the selected dates are in the America/Los_Angeles timezone
+    start_date = timezone.localize(datetime.combine(start_date, datetime.min.time()))
+    end_date = timezone.localize(datetime.combine(end_date, datetime.max.time()))
+
 st.write(':wave: Welcome:exclamation:')
+
 st.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 la_timezone = pytz.timezone('America/Los_Angeles')
 
