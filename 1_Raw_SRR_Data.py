@@ -130,6 +130,7 @@ with cols4:
     start_date, end_date = date_range[0], date_range[1]
 
 st.write(':wave: Welcome:exclamation:')
+st.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
