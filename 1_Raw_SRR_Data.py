@@ -117,7 +117,7 @@ with cols2:
         df_filtered = df
 
 with cols3:
-    current_month = datetime.now().strftime('%B')
+    current_month = datetime.now(timezone).strftime('%B')
     selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()), index=(df_filtered['Month'].unique().tolist().index(current_month) + 1) if current_month in df_filtered['Month'].unique() else 0)
 
     if selected_month != 'All':
@@ -126,9 +126,8 @@ with cols3:
         df_filtered = df
 
 with cols4:
-    default_start_date = datetime.today().replace(day=1) - timedelta(days=1)
-    default_start_date = default_start_date.replace(day=1)
-    default_end_date = datetime.today().replace(day=1) - timedelta(days=1)
+    default_start_date = (datetime.now(timezone).replace(day=1) - timedelta(days=1)).replace(day=1)
+    default_end_date = datetime.now(timezone).replace(day=1) - timedelta(days=1)
 
     date_range = st.date_input("Select Delta Range", value=(default_start_date, default_end_date))
     start_date, end_date = date_range[0], date_range[1]
@@ -146,7 +145,7 @@ la_timezone = pytz.timezone('America/Los_Angeles')
 la_now = datetime.now(la_timezone)
 
 # Display the time in Streamlit
-st.write("Current time in LA: ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
+st.write("Updated as of (PST): ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
 
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
