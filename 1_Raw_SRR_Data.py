@@ -138,7 +138,7 @@ la_timezone = pytz.timezone('America/Los_Angeles')
 la_now = datetime.now(la_timezone)
 
 # Display the time in Streamlit
-st.write(f"Current time in LA: {la_now.strftime('%Y-%m-%d %H:%M:%S')}")
+st.write("Current time in LA: ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
 
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
