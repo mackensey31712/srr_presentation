@@ -138,14 +138,10 @@ with cols4:
 
 st.write(':wave: Welcome:exclamation:')
 
-st.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 la_timezone = pytz.timezone('America/Los_Angeles')
 
 # Get the current time in Los Angeles timezone
 la_now = datetime.now(la_timezone)
-
-# Display the time in Streamlit
-st.write("Updated as of (PST): ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
 
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
@@ -632,6 +628,9 @@ st.altair_chart(chart_attended, use_container_width=True)
 #     time.sleep(refresh_rate)
 #     st.cache_data.clear()
 #     st.rerun()
+
+# Display the time in Streamlit
+st.sidebar.write("Updated as of (PST): ", la_now.strftime('%Y-%m-%d, %H:%M:%S %Z%z'))
 
 refresh_rate = 120
 
