@@ -11,6 +11,7 @@ from st_aggrid.shared import JsCode
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
+import pytz
 
 st.set_page_config(page_title="Raw SRR Data", page_icon=":mag_right:", layout="wide")
 
@@ -131,6 +132,13 @@ with cols4:
 
 st.write(':wave: Welcome:exclamation:')
 st.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+la_timezone = pytz.timezone('America/Los_Angeles')
+
+# Get the current time in Los Angeles timezone
+la_now = datetime.now(la_timezone)
+
+# Display the time in Streamlit
+st.write(f"Current time in LA: {la_now.strftime('%Y-%m-%d %H:%M:%S')}")
 
 five9logo_url = "https://raw.githubusercontent.com/mackensey31712/srr/main/five9log1.png"
 
