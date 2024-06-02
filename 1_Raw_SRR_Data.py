@@ -52,6 +52,8 @@ def convert_to_seconds(time_str):
 
 # Convert seconds to h:mmm:ss while also accounting for negative values
 def seconds_to_hms(seconds):
+    if np.isnan(seconds):
+        return "00:00:00"
     sign = "-" if seconds < 0 else ""
     seconds = abs(seconds)
     hours = int(seconds // 3600)
@@ -150,11 +152,12 @@ df_inqueue = df_inqueue[['Case #', 'Requestor', 'Service', 'Creation Timestamp',
 df_inprogress = df_filtered[df_filtered['Status'] == 'In Progress']
 df_inprogress = df_inprogress[['Case #', 'Requestor', 'Service', 'Creation Timestamp', 'SME (On It)', 'TimeTo: On It', 'Message Link']]
 
-df_filtered['TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
-df_filtered['TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
+df_filtered.loc[:, 'TimeTo: On It Sec'] = df_filtered['TimeTo: On It'].apply(convert_to_seconds)
+df_filtered.loc[:, 'TimeTo: Attended Sec'] = df_filtered['TimeTo: Attended'].apply(convert_to_seconds)
 
-df_filtered['TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'], errors='coerce')
-df_filtered['TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'], errors='coerce')
+df_filtered.loc[:, 'TimeTo: On It'] = pd.to_timedelta(df_filtered['TimeTo: On It'], errors='coerce')
+df_filtered.loc[:, 'TimeTo: Attended'] = pd.to_timedelta(df_filtered['TimeTo: Attended'], errors='coerce')
+
 
 overall_avg_on_it_sec = df_filtered['TimeTo: On It'].dt.total_seconds().mean()
 overall_avg_attended_sec = df_filtered['TimeTo: Attended'].dt.total_seconds().mean()
@@ -163,10 +166,11 @@ unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
 overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
 overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
 
-df_custom_range = df[(df['Date Created'] >= pd.to_datetime(start_date)) & (df['Date Created'] <= pd.to_datetime(end_date))]
+df_custom_range = df_filtered[(df_filtered['Date Created'] >= start_date) & (df_filtered['Date Created'] <= end_date)]
 
-df_custom_range['TimeTo: On It'] = pd.to_timedelta(df_custom_range['TimeTo: On It'], errors='coerce')
-df_custom_range['TimeTo: Attended'] = pd.to_timedelta(df_custom_range['TimeTo: Attended'], errors='coerce')
+df_custom_range.loc[:, 'TimeTo: On It'] = pd.to_timedelta(df_custom_range['TimeTo: On It'], errors='coerce')
+df_custom_range.loc[:, 'TimeTo: Attended'] = pd.to_timedelta(df_custom_range['TimeTo: Attended'], errors='coerce')
+
 
 custom_range_avg_on_it_sec = df_custom_range['TimeTo: On It'].dt.total_seconds().mean()
 custom_range_avg_attended_sec = df_custom_range['TimeTo: Attended'].dt.total_seconds().mean()
