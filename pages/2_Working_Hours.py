@@ -165,7 +165,7 @@ unique_case_count, survey_avg, survey_count = calculate_metrics(df_filtered)
 overall_avg_on_it_hms = seconds_to_hms(overall_avg_on_it_sec)
 overall_avg_attended_hms = seconds_to_hms(overall_avg_attended_sec)
 
-df_custom_range = df_filtered[(df_filtered['Date Created'] >= start_date) & (df_filtered['Date Created'] <= end_date)]
+df_custom_range = df[(df['Date Created'] >= start_date) & (df['Date Created'] <= end_date)]
 
 df_custom_range.loc[:, 'TimeTo: On It'] = pd.to_timedelta(df_custom_range['TimeTo: On It'], errors='coerce')
 df_custom_range.loc[:, 'TimeTo: Attended'] = pd.to_timedelta(df_custom_range['TimeTo: Attended'], errors='coerce')
