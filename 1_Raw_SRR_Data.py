@@ -101,8 +101,16 @@ with cols2:
         df_filtered = df
 
 with cols3:
-    current_month = datetime.now(timezone).strftime('%B')
-    selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()), index=(df_filtered['Month'].unique().tolist().index(current_month) + 1) if current_month in df_filtered['Month'].unique() else 0)
+    # # Make the current month the default
+    # current_month = datetime.now(timezone).strftime('%B')
+    # selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()), index=(df_filtered['Month'].unique().tolist().index(current_month) + 1) if current_month in df_filtered['Month'].unique() else 0)
+    # if selected_month != 'All':
+    #     df_filtered = df_filtered[df_filtered['Month'] == selected_month]
+    # else:
+        # df_filtered = df
+
+    # Set the default "Month" value to "All"
+    selected_month = st.selectbox('Month', ['All'] + list(df_filtered['Month'].unique()))
     if selected_month != 'All':
         df_filtered = df_filtered[df_filtered['Month'] == selected_month]
     else:
