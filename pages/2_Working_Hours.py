@@ -81,7 +81,7 @@ def convert_df_to_csv(df):
     return df.to_csv(index=False).encode('utf-8')
 
 conn = st.connection("gsheets", type=GSheetsConnection)
-data = conn.read(worksheet="Response and Survey Form")
+data = conn.read(worksheet="Response and Survey Form", usecols=list(range(31)))
 df = load_data(data).copy()
 
 def load_lottieurl(url: str):
@@ -104,6 +104,11 @@ with col2:
 
 st.markdown(
     f"<h1 style='text-align: center;'>Five9 SRR Management View</h1>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    f"<h2 style='text-align: center;'>Working Hours (M-F, 5am - 4 pm)</h2>",
     unsafe_allow_html=True
 )
 
@@ -391,17 +396,25 @@ with col1:
     st.write(chart3)
 
 chart4 = alt.Chart(df_filtered).mark_bar().encode(
-    y=alt.Y('SME (On It):N', sort='-x'),  
+    y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
     x=alt.X('count()', title='Unique Case Count'),
-    tooltip=['SME (On It)', 'count()']
+    tooltip=['SME', 'count()']
 ).properties(
-    title='Interactions Handled',
+    title='Interactions Handled by SME Attended',
     width=700,
     height=600
 )
 
+# Prepare data for table
+data_chart4 = df_filtered['SME'].value_counts().reset_index()
+data_chart4.index = data_chart4.index + 1
+data_chart4.columns = ['SME', 'Unique Case Count']
+
+# To display the chart in your Streamlit app
 with col5:
     st.write(chart4)
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(data_chart4, use_container_width=True)
 
 st.subheader('Interaction Count by Requestor')
 

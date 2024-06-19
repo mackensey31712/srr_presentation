@@ -88,6 +88,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+st.markdown(
+    f"<h2 style='text-align: center;'>Raw Data</h2>",
+    unsafe_allow_html=True
+)
+
 cols1, cols2, cols3, cols4 = st.columns(4)
 
 with cols1:
@@ -380,17 +386,28 @@ with col1:
     st.write(chart3)
 
 chart4 = alt.Chart(df_filtered).mark_bar().encode(
-    y=alt.Y('SME (On It):N', sort='-x'),  
+    y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
     x=alt.X('count()', title='Unique Case Count'),
-    tooltip=['SME (On It)', 'count()']
+    tooltip=['SME', 'count()']
 ).properties(
-    title='Interactions Handled',
+    title='Interactions Handled by SME Attended',
     width=700,
     height=600
 )
 
+# with col5:
+#     st.write(chart4)
+
+# Prepare data for table
+data_chart4 = df_filtered['SME'].value_counts().reset_index()
+data_chart4.index = data_chart4.index + 1
+data_chart4.columns = ['SME', 'Unique Case Count']
+
+# To display the chart in your Streamlit app
 with col5:
     st.write(chart4)
+    with st.expander("Show Data", expanded=False):
+        st.dataframe(data_chart4, use_container_width=True)
 
 st.subheader('Interaction Count by Requestor')
 
