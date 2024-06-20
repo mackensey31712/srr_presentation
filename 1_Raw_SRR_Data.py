@@ -88,12 +88,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-st.markdown(
-    f"<h2 style='text-align: center;'>Raw Data</h2>",
-    unsafe_allow_html=True
-)
-
 cols1, cols2, cols3, cols4 = st.columns(4)
 
 with cols1:
@@ -230,7 +224,10 @@ filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Times
 
 st.title('Data')
 with st.expander(':blue[Show Data]', expanded=False):
-    st.dataframe(df_filtered[filtered_columns], use_container_width=True)
+    # st.dataframe(df_filtered[filtered_columns], use_container_width=True)
+    df_display = df_filtered[filtered_columns].reset_index(drop=True)  # Reset the index
+    df_display.index = df_display.index + 1  # Adjust the index to start from 1
+    st.dataframe(df_display, use_container_width=True)
 
 col1, col2 = st.columns(2)
 
@@ -247,8 +244,12 @@ with col1:
     st.plotly_chart(fig, use_container_width=True)
     csv = agg_hour_service.to_csv(index=False).encode('utf-8')
     with st.expander(":blue[Show Data]", expanded=False):
-        st.dataframe(agg_hour_service, use_container_width=True)
+        df_agg_hour_service = agg_hour_service.reset_index(drop=True) # Reset the index
+        df_agg_hour_service.index = df_agg_hour_service.index + 1 # Adjust the index to start from 1
+        st.dataframe(df_agg_hour_service, use_container_width=True)
         st.download_button(':green[Download Data]', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', help="Click to download the Hourly Interactions by Service in CSV format")
+        # st.dataframe(agg_hour_service, use_container_width=True)
+        # st.download_button(':green[Download Data]', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', help="Click to download the Hourly Interactions by Service in CSV format")
 
 with col2:
     agg_hour_on_it = df_filtered.groupby('Hour_Created')[['TimeTo: On It Sec']].mean().reset_index()
@@ -258,7 +259,9 @@ with col2:
     agg_hour_on_it['TimeTo: On It HH:MM:SS'] = agg_hour_on_it['TimeTo: On It Minutes'].apply(minutes_to_hms)
     csv = agg_hour_on_it.to_csv(index=False).encode('utf-8')
     with st.expander(":blue[Show Data]", expanded=False):
-        st.dataframe(agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
+        df_agg_hour_on_it = agg_hour_on_it.reset_index(drop=True) # Reset the index
+        df_agg_hour_on_it.index = df_agg_hour_on_it.index + 1 # Adjust the index to start from 1
+        st.dataframe(df_agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
         st.download_button(':green[Download Data]', csv, file_name='average_time_to_on_it.csv', mime='text/csv', help="Click to download the Average Time to On It by Hour in CSV format")
 
 col1, col2 = st.columns(2)
@@ -305,17 +308,34 @@ with col2:
 
 col1, col2 = st.columns(2)
 
+# with col1:
+#     avg_attended_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
+#     avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
+#     st.subheader('Average TimeTo: Attended by Case Reason')
+#     st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
+
+# with col2:
+#     avg_on_it_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: On It Sec'].mean().reset_index().sort_values(by='TimeTo: On It Sec', ascending=False)
+#     avg_on_it_by_case_reason['Avg TimeTo: On It'] = avg_on_it_by_case_reason['TimeTo: On It Sec'].apply(seconds_to_hms)
+#     st.subheader('Average TimeTo: On It by Case Reason')
+#     st.dataframe(avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True), use_container_width=True)
+
 with col1:
     avg_attended_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
     avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
     st.subheader('Average TimeTo: Attended by Case Reason')
-    st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
+    avg_attended_display = avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True) # Reset the index
+    avg_attended_display.index = avg_attended_display.index + 1 # Adjust the index to start from 1
+    st.dataframe(avg_attended_display, use_container_width=True)
 
 with col2:
     avg_on_it_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: On It Sec'].mean().reset_index().sort_values(by='TimeTo: On It Sec', ascending=False)
     avg_on_it_by_case_reason['Avg TimeTo: On It'] = avg_on_it_by_case_reason['TimeTo: On It Sec'].apply(seconds_to_hms)
     st.subheader('Average TimeTo: On It by Case Reason')
-    st.dataframe(avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True), use_container_width=True)
+    avg_on_it_display = avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True) # Reset the index
+    avg_on_it_display.index = avg_on_it_display.index + 1 # Adjust the index to start from 1
+    st.dataframe(avg_on_it_display, use_container_width=True)
+
 
 col1, col5 = st.columns(2)
 
@@ -344,7 +364,8 @@ with col1:
     with st.expander(':blue[Show Data]', expanded=False):
         agg_month_filtered = agg_month[agg_month['Month'].isin(month_order)]
         agg_month_filtered['Month'] = pd.Categorical(agg_month_filtered['Month'], categories=month_order, ordered=True)
-        agg_month_sorted = agg_month_filtered.sort_values('Month').reset_index(drop=True)
+        agg_month_sorted = agg_month_filtered.sort_values('Month').reset_index(drop=True) # Reset the index
+        agg_month_sorted.index = agg_month_sorted.index + 1 # Adjust the index to start from 1
         st.dataframe(agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
         csv = agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
         st.download_button(':green[Download Data]', csv, file_name='monthly_response_times.csv', mime='text/csv', help="Click to download the Monthly Response Times in CSV format")
@@ -370,8 +391,10 @@ with col5:
     agg_service['TimeTo_On_It_HH:MM:SS'] = agg_service['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
     agg_service['TimeTo_Attended_HH:MM:SS'] = agg_service['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
     with st.expander(':blue[Show Data]', expanded=False):
-        st.dataframe(agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
-        csv = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        agg_service_display = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].reset_index(drop=True) # Reset the index
+        agg_service_display.index = agg_service_display.index + 1 # Adjust the index to start from 1
+        st.dataframe(agg_service_display, use_container_width=True)
+        csv = agg_service_display.to_csv(index=False).encode('utf-8')
         st.download_button(':green[Download Data]', csv, file_name='group_response_times.csv', mime='text/csv', help="Click to download the Group Response Times in CSV format")
 
 service_counts = df_filtered['Service'].value_counts().reset_index()
@@ -385,7 +408,7 @@ chart3.update_layout(width=800, height=600)
 with col1:
     st.write(chart3)
 
-chart4 = alt.Chart(df_filtered).mark_bar().encode(
+chart4 = alt.Chart(df_filtered[df_filtered['SME'].notna()]).mark_bar().encode(
     y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
     x=alt.X('count()', title='Unique Case Count'),
     tooltip=['SME', 'count()']

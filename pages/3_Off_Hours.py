@@ -16,28 +16,17 @@ from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
 import pytz
 
-
 st.set_page_config(page_title="Off Hours", page_icon=":city_sunset:", layout="wide")
 
 # Set timezone to America/Los_Angeles
 timezone = pytz.timezone('America/Los_Angeles')
 
-# @st.cache_data(ttl=120, show_spinner=True)
-# def load_data(url):
-#     df = pd.read_csv(url)
-#     df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce')  # set 'Date Created' as datetime
-#     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)  # Renaming column
-#     df = df.loc[df['Working Hours?'] == 'No'] # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column
-#     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
-#     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
-#     return df
-
 @st.cache_data(ttl=120, show_spinner=True)
 def load_data(data):
     df = data.copy()  # Make a copy to avoid modifying the original DataFrame
-    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce').dt.tz_localize(timezone)   
+    df['Date Created'] = pd.to_datetime(df['Date Created'], errors='coerce').dt.tz_localize(timezone)
     df.rename(columns={'In process (On It SME)': 'SME (On It)'}, inplace=True)
-    df = df.loc[df['Working Hours?'] == 'No'] # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column  
+    df = df.loc[df['Working Hours?'] == 'No']  # Filter Dataframe to only include rows with 'No' in the 'Working Hours?' column
     df['TimeTo: On It (Raw)'] = df['TimeTo: On It'].copy()
     df['TimeTo: Attended (Raw)'] = df['TimeTo: Attended'].copy()
     df.dropna(subset=['Service'], inplace=True)
@@ -58,13 +47,6 @@ def convert_to_seconds(time_str):
     except ValueError:
         return 0
 
-# def seconds_to_hms(seconds):
-#     hours = seconds // 3600
-#     minutes = (seconds % 3600) // 60
-#     seconds = seconds % 60
-#     return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
-
-# Convert seconds to h:mmm:ss while also accounting for negative values
 def seconds_to_hms(seconds):
     if np.isnan(seconds):
         return "00:00:00"
@@ -196,7 +178,7 @@ with col2:
 with col3:
     st.metric(label="Answered Surveys", value=survey_count)
 with col4:
-    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms, delta=delta_on_it_hms, delta_color="inverse" )
+    st.metric("Overall Avg. TimeTo: On It", overall_avg_on_it_hms, delta=delta_on_it_hms, delta_color="inverse")
 with col5:
     st.metric("Overall Avg. TimeTo: Attended", overall_avg_attended_hms, delta=delta_attended_hms, delta_color="inverse")
 
@@ -244,7 +226,9 @@ filtered_columns = ['Case #', 'Service', 'Inquiry', 'Requestor', 'Creation Times
 
 st.title('Data')
 with st.expander(':blue[Show Data]', expanded=False):
-    st.dataframe(df_filtered[filtered_columns], use_container_width=True)
+    df_display = df_filtered[filtered_columns].copy()
+    df_display.index = df_display.index + 1  # Adjust the index to start from 1
+    st.dataframe(df_display, use_container_width=True)
 
 col1, col2 = st.columns(2)
 
@@ -261,7 +245,9 @@ with col1:
     st.plotly_chart(fig, use_container_width=True)
     csv = agg_hour_service.to_csv(index=False).encode('utf-8')
     with st.expander(":blue[Show Data]", expanded=False):
-        st.dataframe(agg_hour_service, use_container_width=True)
+        df_agg_hour_service = agg_hour_service.reset_index(drop=True)  # Reset the index
+        df_agg_hour_service.index = df_agg_hour_service.index + 1  # Adjust the index to start from 1
+        st.dataframe(df_agg_hour_service, use_container_width=True)
         st.download_button(':green[Download Data]', csv, file_name='hourly_interactions_by_service.csv', mime='text/csv', help="Click to download the Hourly Interactions by Service in CSV format")
 
 with col2:
@@ -272,16 +258,12 @@ with col2:
     agg_hour_on_it['TimeTo: On It HH:MM:SS'] = agg_hour_on_it['TimeTo: On It Minutes'].apply(minutes_to_hms)
     csv = agg_hour_on_it.to_csv(index=False).encode('utf-8')
     with st.expander(":blue[Show Data]", expanded=False):
-        st.dataframe(agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
+        df_agg_hour_on_it = agg_hour_on_it.reset_index(drop=True)  # Reset the index
+        df_agg_hour_on_it.index = df_agg_hour_on_it.index + 1  # Adjust the index to start from 1
+        st.dataframe(df_agg_hour_on_it[['Hour_Created', 'TimeTo: On It HH:MM:SS']], use_container_width=True)
         st.download_button(':green[Download Data]', csv, file_name='average_time_to_on_it.csv', mime='text/csv', help="Click to download the Average Time to On It by Hour in CSV format")
 
 col1, col2 = st.columns(2)
-
-# with col1:
-#     pivot_table = df_filtered.pivot_table(index='Hour_Created', columns='Case Reason', values='Service', aggfunc='count', fill_value=0)
-#     fig = px.bar(pivot_table, x=pivot_table.index, y=pivot_table.columns, barmode='stack', title='Case Reason Distribution by Hour')
-#     fig.update_layout(xaxis_title='Hour', yaxis_title='Count', legend_title='Case Reason', xaxis=dict(tickangle=0))
-#     st.plotly_chart(fig, use_container_width=True)
 
 with col1:
     pivot_table = df_filtered.pivot_table(index='Hour_Created', columns='Case Reason', values='Service', aggfunc='count', fill_value=0).reset_index()
@@ -323,13 +305,17 @@ with col1:
     avg_attended_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: Attended Sec'].mean().reset_index().sort_values(by='TimeTo: Attended Sec', ascending=False)
     avg_attended_by_case_reason['Avg TimeTo: Attended'] = avg_attended_by_case_reason['TimeTo: Attended Sec'].apply(seconds_to_hms)
     st.subheader('Average TimeTo: Attended by Case Reason')
-    st.dataframe(avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True), use_container_width=True)
+    avg_attended_display = avg_attended_by_case_reason[['Case Reason', 'Avg TimeTo: Attended']].reset_index(drop=True)  # Reset the index
+    avg_attended_display.index = avg_attended_display.index + 1  # Adjust the index to start from 1
+    st.dataframe(avg_attended_display, use_container_width=True)
 
 with col2:
     avg_on_it_by_case_reason = df_filtered.groupby('Case Reason')['TimeTo: On It Sec'].mean().reset_index().sort_values(by='TimeTo: On It Sec', ascending=False)
     avg_on_it_by_case_reason['Avg TimeTo: On It'] = avg_on_it_by_case_reason['TimeTo: On It Sec'].apply(seconds_to_hms)
     st.subheader('Average TimeTo: On It by Case Reason')
-    st.dataframe(avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True), use_container_width=True)
+    avg_on_it_display = avg_on_it_by_case_reason[['Case Reason', 'Avg TimeTo: On It']].reset_index(drop=True)  # Reset the index
+    avg_on_it_display.index = avg_on_it_display.index + 1  # Adjust the index to start from 1
+    st.dataframe(avg_on_it_display, use_container_width=True)
 
 col1, col5 = st.columns(2)
 
@@ -338,10 +324,10 @@ agg_month_long = agg_month.melt(id_vars=['Month'], value_vars=['TimeTo_On_It_Min
 month_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 chart = alt.Chart(agg_month_long).mark_bar().encode(
-    x=alt.X('Month', sort=month_order),  
-    y=alt.Y('Minutes', stack='zero'),  
-    color='Category',  
-    tooltip=['Month', 'Category', 'Minutes']  
+    x=alt.X('Month', sort=month_order),
+    y=alt.Y('Minutes', stack='zero'),
+    color='Category',
+    tooltip=['Month', 'Category', 'Minutes']
 ).properties(
     title='Monthly Response Times',
     width=800,
@@ -359,6 +345,7 @@ with col1:
         agg_month_filtered = agg_month[agg_month['Month'].isin(month_order)]
         agg_month_filtered['Month'] = pd.Categorical(agg_month_filtered['Month'], categories=month_order, ordered=True)
         agg_month_sorted = agg_month_filtered.sort_values('Month').reset_index(drop=True)
+        agg_month_sorted.index = agg_month_sorted.index + 1  # Adjust the index to start from 1
         st.dataframe(agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
         csv = agg_month_sorted[['Month', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
         st.download_button(':green[Download Data]', csv, file_name='monthly_response_times.csv', mime='text/csv', help="Click to download the Monthly Response Times in CSV format")
@@ -370,9 +357,9 @@ agg_service_long = agg_service.melt(id_vars=['Service'], value_vars=['TimeTo_On_
 
 chart2 = alt.Chart(agg_service_long).mark_bar().encode(
     x='Service',
-    y=alt.Y('Minutes', stack='zero'),  
-    color='Category',  
-    tooltip=['Service', 'Category', 'Minutes']  
+    y=alt.Y('Minutes', stack='zero'),
+    color='Category',
+    tooltip=['Service', 'Category', 'Minutes']
 ).properties(
     title='Group Response Times',
     width=800,
@@ -384,8 +371,10 @@ with col5:
     agg_service['TimeTo_On_It_HH:MM:SS'] = agg_service['TimeTo_On_It_Minutes'].apply(minutes_to_hms)
     agg_service['TimeTo_Attended_HH:MM:SS'] = agg_service['TimeTo_Attended_Minutes'].apply(minutes_to_hms)
     with st.expander(':blue[Show Data]', expanded=False):
-        st.dataframe(agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']], use_container_width=True)
-        csv = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].to_csv(index=False).encode('utf-8')
+        agg_service_display = agg_service[['Service', 'TimeTo_On_It_HH:MM:SS', 'TimeTo_Attended_HH:MM:SS']].reset_index(drop=True)
+        agg_service_display.index = agg_service_display.index + 1  # Adjust the index to start from 1
+        st.dataframe(agg_service_display, use_container_width=True)
+        csv = agg_service_display.to_csv(index=False).encode('utf-8')
         st.download_button(':green[Download Data]', csv, file_name='group_response_times.csv', mime='text/csv', help="Click to download the Group Response Times in CSV format")
 
 service_counts = df_filtered['Service'].value_counts().reset_index()
@@ -399,7 +388,7 @@ chart3.update_layout(width=800, height=600)
 with col1:
     st.write(chart3)
 
-chart4 = alt.Chart(df_filtered).mark_bar().encode(
+chart4 = alt.Chart(df_filtered[df_filtered['SME'].notna()]).mark_bar().encode(
     y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
     x=alt.X('count()', title='Unique Case Count'),
     tooltip=['SME', 'count()']
@@ -410,7 +399,7 @@ chart4 = alt.Chart(df_filtered).mark_bar().encode(
 )
 
 # Prepare data for table
-data_chart4 = df_filtered['SME'].value_counts().reset_index()
+data_chart4 = df_filtered[df_filtered['SME'].notna()]['SME'].value_counts().reset_index()
 data_chart4.index = data_chart4.index + 1
 data_chart4.columns = ['SME', 'Unique Case Count']
 
@@ -452,7 +441,9 @@ df_sorted['Avg_Attended'] = df_sorted['Avg_Attended_Sec'].apply(seconds_to_hms)
 df_sorted.rename(columns={'SME (On It)': 'SME'}, inplace=True)
 
 st.subheader('SME Summary Table')
-st.dataframe(df_sorted[['SME', 'Avg_On_It', 'Avg_Attended', 'Number_of_Interactions', 'Avg_Survey']].reset_index(drop=True))
+df_sorted_display = df_sorted[['SME', 'Avg_On_It', 'Avg_Attended', 'Number_of_Interactions', 'Avg_Survey']].reset_index(drop=True)
+df_sorted_display.index = df_sorted_display.index + 1  # Adjust the index to start from 1
+st.dataframe(df_sorted_display, use_container_width=True)
 
 df_sorted['Avg_On_It_Min'] = df_sorted['Avg_On_It_Sec'] / 60
 df_sorted['Avg_Attended_Min'] = df_sorted['Avg_Attended_Sec'] / 60
