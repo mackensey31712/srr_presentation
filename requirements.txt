@@ -1,6 +1,6 @@
 altair
-numpy
-pandas
+numpy==1.19.3
+pandas==1.3.0
 pydeck
 streamlit
 streamlit_lottie
