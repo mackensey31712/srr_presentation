@@ -18,6 +18,15 @@ import pytz
 
 st.set_page_config(page_title="Off Hours", page_icon=":city_sunset:", layout="wide", menu_items={'Get help': 'mailto: mcgee.acebedo@five9.com'})
 
+hide_streamlit_style = """
+        <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        </style>
+        """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Set timezone to America/Los_Angeles
 timezone = pytz.timezone('America/Los_Angeles')
 
