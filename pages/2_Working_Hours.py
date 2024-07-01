@@ -13,7 +13,7 @@ from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta
 import pytz
 
-st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_sunrise:", layout="wide")
+st.set_page_config(page_title="Working Hours (M-F, 5am-4PM)", page_icon=":city_sunrise:", layout="wide", menu_items={'Get help': 'mailto: mcgee.acebedo@five9.com'})
 
 # Set timezone to America/Los_Angeles
 timezone = pytz.timezone('America/Los_Angeles')
