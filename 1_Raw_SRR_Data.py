@@ -77,6 +77,20 @@ lottie_queuing = load_lottieurl("https://lottie.host/910429d2-a0a4-4668-a4d4-ee8
 lottie_inprogress = load_lottieurl("https://lottie.host/c5c6caea-922b-4b4e-b34a-41ecaafe2a13/mphMkSfOkR.json")
 lottie_chill = load_lottieurl("https://lottie.host/2acdde4d-32d7-44a8-aa64-03e1aa191466/8EG5a8ToOQ.json")
 
+# Define the color mapping for Service values
+color_map = {
+    "VCC": "#0068C9",
+    "AMC": "LightSkyBlue",
+    "Network": "Red",
+    "WFO": "Orange",
+    "CRM": "#29B09D"
+}
+
+# Function to get color for a service
+def get_service_color(service):
+    return color_map.get(service, "Gray")  # Default to gray if service not in map
+
+
 col1, col2 = st.columns([3, .350])
 with col2:
     if st.button(':red[Refresh Data]'):
@@ -235,11 +249,23 @@ with col1:
     agg_hour_service = df_filtered.groupby(['Hour_Created', 'Service']).size().unstack(fill_value=0).reset_index()
     agg_hour_service['Total'] = agg_hour_service.iloc[:, 1:].sum(axis=1)
 
-    fig = px.bar(agg_hour_service, x='Hour_Created', y=agg_hour_service.columns[1:-1], title='Hourly Interactions by Service', labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation', 'variable': 'Service'}, category_orders={'Service': agg_hour_service.columns[1:-1]})
+    # fig = px.bar(agg_hour_service, x='Hour_Created', y=agg_hour_service.columns[1:-1], title='Hourly Interactions by Service', labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation', 'variable': 'Service'}, category_orders={'Service': agg_hour_service.columns[1:-1]})
+    # fig.update_layout(barmode='stack')
+
+    # for i in range(len(agg_hour_service)):
+    #     fig.add_annotation(x=agg_hour_service['Hour_Created'][i], y=agg_hour_service['Total'][i], text=str(agg_hour_service['Total'][i]), showarrow=False, yshift=5, font=dict(color='black', size=10))
+
+    fig = px.bar(agg_hour_service, x='Hour_Created', y=agg_hour_service.columns[1:-1], 
+             title='Hourly Interactions by Service', 
+             labels={'value': 'Interactions', 'Hour_Created': 'Hour of Creation', 'variable': 'Service'}, 
+             category_orders={'Service': agg_hour_service.columns[1:-1]},
+             color_discrete_map=color_map)
     fig.update_layout(barmode='stack')
 
     for i in range(len(agg_hour_service)):
-        fig.add_annotation(x=agg_hour_service['Hour_Created'][i], y=agg_hour_service['Total'][i], text=str(agg_hour_service['Total'][i]), showarrow=False, yshift=5, font=dict(color='black', size=10))
+        fig.add_annotation(x=agg_hour_service['Hour_Created'][i], y=agg_hour_service['Total'][i], 
+                        text=str(agg_hour_service['Total'][i]), showarrow=False, yshift=5, 
+                        font=dict(color='black', size=10))
 
     st.plotly_chart(fig, use_container_width=True)
     csv = agg_hour_service.to_csv(index=False).encode('utf-8')
@@ -400,7 +426,14 @@ with col5:
 service_counts = df_filtered['Service'].value_counts().reset_index()
 service_counts.columns = ['Service', 'Count']
 
-chart3 = px.bar(service_counts, x='Service', y='Count', color='Service', text='Count', title='Interaction Count')
+# chart3 = px.bar(service_counts, x='Service', y='Count', color='Service', text='Count', title='Interaction Count')
+# chart3.update_traces(textposition='outside')
+# chart3.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', xaxis_tickangle=-0)
+# chart3.update_layout(width=800, height=600)
+
+chart3 = px.bar(service_counts, x='Service', y='Count', color='Service', text='Count', 
+                title='Interaction Count',
+                color_discrete_map=color_map)
 chart3.update_traces(textposition='outside')
 chart3.update_layout(uniformtext_minsize=8, uniformtext_mode='hide', xaxis_tickangle=-0)
 chart3.update_layout(width=800, height=600)
@@ -408,29 +441,76 @@ chart3.update_layout(width=800, height=600)
 with col1:
     st.write(chart3)
 
-chart4 = alt.Chart(df_filtered[df_filtered['SME'].notna()]).mark_bar().encode(
-    y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
-    x=alt.X('count()', title='Unique Case Count'),
-    tooltip=['SME', 'count()']
-).properties(
-    title='Interactions Handled by SME Attended',
+# chart4 = alt.Chart(df_filtered[df_filtered['SME'].notna()]).mark_bar().encode(
+#     y=alt.Y('SME:N', sort='-x'),  # Sorting based on the count in descending order, ensure to specify ':N' for nominal data
+#     x=alt.X('count()', title='Unique Case Count'),
+#     tooltip=['SME', 'count()']
+# ).properties(
+#     title='Interactions Handled by SME Attended',
+#     width=700,
+#     height=600
+# )
+
+
+# # Prepare data for table
+# data_chart4 = df_filtered['SME'].value_counts().reset_index()
+# data_chart4.index = data_chart4.index + 1
+# data_chart4.columns = ['SME', 'Unique Case Count']
+
+# # To display the chart in your Streamlit app
+# with col5:
+#     st.write(chart4)
+#     with st.expander("Show Data", expanded=False):
+#         st.dataframe(data_chart4, use_container_width=True)
+
+
+# Prepare data for the chart
+chart4_data = df_filtered[df_filtered['SME'].notna()].groupby(['SME', 'Service']).size().reset_index(name='count')
+
+# Sum counts per SME and sort in descending order
+sme_order = chart4_data.groupby('SME')['count'].sum().sort_values(ascending=False).index
+
+# # Create the Plotly bar chart
+# fig = px.bar(chart4_data, x='count', y='SME', color='Service', 
+#              title='Interactions Handled by SME Attended', 
+#              orientation='h',  # Horizontal bar chart
+#              category_orders={'SME': list(sme_order)},  # Sort SME in descending order
+#              color_discrete_sequence=px.colors.qualitative.Plotly)  # Using Plotly's qualitative color scale
+
+# fig.update_layout(
+#     xaxis_title='Interaction Count',
+#     yaxis_title='SME',
+#     width=700,
+#     height=600
+# )
+
+fig = px.bar(chart4_data, x='count', y='SME', color='Service', 
+             title='Interactions Handled by SME Attended', 
+             orientation='h',
+             category_orders={'SME': list(sme_order)},
+             color_discrete_map=color_map)
+
+fig.update_layout(
+    xaxis_title='Interaction Count',
+    yaxis_title='SME',
     width=700,
     height=600
 )
 
-# with col5:
-#     st.write(chart4)
 
 # Prepare data for table
-data_chart4 = df_filtered['SME'].value_counts().reset_index()
+data_chart4 = chart4_data.pivot_table(index='SME', columns='Service', values='count', fill_value=0).reset_index()
+data_chart4['Total'] = data_chart4.sum(axis=1)
+data_chart4 = data_chart4.sort_values('Total', ascending=False).reset_index(drop=True)
 data_chart4.index = data_chart4.index + 1
-data_chart4.columns = ['SME', 'Unique Case Count']
 
-# To display the chart in your Streamlit app
+# Display the chart in your Streamlit app
 with col5:
-    st.write(chart4)
+    st.plotly_chart(fig, use_container_width=True)
     with st.expander("Show Data", expanded=False):
         st.dataframe(data_chart4, use_container_width=True)
+
+
 
 st.subheader('Interaction Count by Requestor')
 
